@@ -13,13 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mcp-rank.vercel.app"),
+  metadataBase: new URL("https://mcp-rank-tau.vercel.app"),
   title: {
-    default: "MCP Rank",
-    template: "%s | MCP Rank",
+    default: "MCP Arena",
+    template: "%s | MCP Arena",
   },
   description:
-    "Rank MCP servers for quality, trust, safety, client compatibility, and real usefulness before install.",
+    "Evaluate MCP servers by quality, trust, safety, compatibility, and real usefulness before install.",
 };
 
 export default function RootLayout({

@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowUpRight, CheckCircle2, CircleAlert, Filter, Search } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, CircleAlert, Search, SlidersHorizontal } from "lucide-react";
 import { overallScore, scoreLabels } from "@/lib/scoring";
-import type { ClientKey, McpServer } from "@/lib/types";
-import { ScoreBadge } from "./score-badge";
+import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
 const clientOptions: Array<{ key: ClientKey; label: string }> = [
   { key: "claude", label: "Claude" },
@@ -22,49 +21,49 @@ type RankingExplorerProps = {
 export function RankingExplorer({ servers, compact = false }: RankingExplorerProps) {
   const [query, setQuery] = useState("");
   const [client, setClient] = useState<ClientKey | "all">("all");
+  const [risk, setRisk] = useState<RiskLevel | "all">("all");
 
   const ranked = useMemo(() => {
     return servers
       .filter((server) => {
-        const matchesQuery =
-          server.name.toLowerCase().includes(query.toLowerCase()) ||
-          server.category.toLowerCase().includes(query.toLowerCase()) ||
-          server.tagline.toLowerCase().includes(query.toLowerCase());
+        const haystack = `${server.name} ${server.category} ${server.tagline} ${server.packageName}`.toLowerCase();
+        const matchesQuery = haystack.includes(query.toLowerCase());
         const matchesClient = client === "all" || server.clients.includes(client);
-        return matchesQuery && matchesClient;
+        const matchesRisk = risk === "all" || server.risk === risk;
+        return matchesQuery && matchesClient && matchesRisk;
       })
       .sort((a, b) => overallScore(b.score) - overallScore(a.score));
-  }, [client, query, servers]);
+  }, [client, query, risk, servers]);
 
-  const visibleServers = compact ? ranked.slice(0, 5) : ranked;
+  const visibleServers = compact ? ranked.slice(0, 6) : ranked;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 p-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="overflow-hidden rounded-lg border border-[var(--arena-line)] bg-white">
+      <div className="flex flex-col gap-4 border-b border-[var(--arena-line)] p-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-zinc-950">Ranked MCP servers</h2>
-          <p className="mt-1 text-sm leading-6 text-zinc-600">
-            Manual trust review today, automation hooks tomorrow.
+          <h2 className="font-serif text-3xl font-semibold">MCP Leaderboard</h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
+            Ranked by reproducible install checks, evidence quality, compatibility, usefulness, and safety.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="flex h-10 min-w-64 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-500">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label className="flex h-10 min-w-64 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] px-3 text-sm text-[var(--arena-muted)]">
             <Search size={16} aria-hidden="true" />
             <span className="sr-only">Search servers</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search server or category"
-              className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+              placeholder="Filter servers..."
+              className="w-full bg-transparent text-sm text-[var(--arena-ink)] outline-none placeholder:text-zinc-400"
             />
           </label>
-          <label className="flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-500">
-            <Filter size={16} aria-hidden="true" />
+          <label className="flex h-10 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm text-[var(--arena-muted)]">
+            <SlidersHorizontal size={16} aria-hidden="true" />
             <span className="sr-only">Filter by client</span>
             <select
               value={client}
               onChange={(event) => setClient(event.target.value as ClientKey | "all")}
-              className="bg-transparent text-sm font-medium text-zinc-800 outline-none"
+              className="bg-transparent text-sm font-medium text-[var(--arena-ink)] outline-none"
             >
               <option value="all">All clients</option>
               {clientOptions.map((option) => (
@@ -74,70 +73,76 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
               ))}
             </select>
           </label>
+          <select
+            value={risk}
+            onChange={(event) => setRisk(event.target.value as RiskLevel | "all")}
+            className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-medium text-[var(--arena-ink)] outline-none"
+          >
+            <option value="all">All risk</option>
+            <option value="low">Low risk</option>
+            <option value="medium">Medium risk</option>
+            <option value="high">High risk</option>
+          </select>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-left">
-          <thead className="bg-zinc-50 text-xs font-semibold uppercase text-zinc-500">
+        <table className="w-full min-w-[1080px] border-collapse text-left">
+          <thead className="bg-[var(--arena-surface)] text-xs font-semibold text-[var(--arena-muted)]">
             <tr>
-              <th className="px-4 py-3">Rank</th>
+              <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Server</th>
-              <th className="px-4 py-3">Overall</th>
+              <th className="px-4 py-3">Category</th>
               {Object.values(scoreLabels).map((label) => (
                 <th key={label} className="px-4 py-3">
                   {label}
+                  <span className="block font-normal">/100</span>
                 </th>
               ))}
+              <th className="px-4 py-3">MCP Arena</th>
               <th className="px-4 py-3">Risk</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100">
+          <tbody className="divide-y divide-[var(--arena-line)]">
             {visibleServers.map((server, index) => {
               const total = overallScore(server.score);
               return (
-                <tr key={server.slug} className="align-top hover:bg-zinc-50/70">
-                  <td className="px-4 py-4 text-sm font-semibold text-zinc-500">#{index + 1}</td>
-                  <td className="max-w-72 px-4 py-4">
+                <tr key={server.slug} className="align-middle hover:bg-[var(--arena-surface)]">
+                  <td className="px-4 py-4 text-sm font-semibold">{index + 1}</td>
+                  <td className="max-w-80 px-4 py-4">
                     <Link
                       href={`/servers/${server.slug}`}
-                      className="group inline-flex items-center gap-1 text-sm font-semibold text-zinc-950"
+                      className="group inline-flex items-center gap-1 font-mono text-sm font-semibold"
                     >
                       {server.name}
                       <ArrowUpRight
                         size={14}
-                        className="text-zinc-400 group-hover:text-zinc-950"
+                        className="text-[var(--arena-muted)] group-hover:text-[var(--arena-ink)]"
                         aria-hidden="true"
                       />
                     </Link>
-                    <p className="mt-1 text-sm leading-5 text-zinc-600">{server.tagline}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {server.clients.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-xs font-medium capitalize text-zinc-600"
-                        >
-                          {item === "vscode" ? "VS Code" : item}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-[var(--arena-muted)]">{server.tagline}</p>
                   </td>
-                  <td className="px-4 py-4">
-                    <ScoreBadge score={total} />
-                  </td>
+                  <td className="px-4 py-4 text-sm text-[var(--arena-muted)]">{server.category}</td>
                   {Object.keys(scoreLabels).map((key) => (
-                    <td key={key} className="px-4 py-4 text-sm font-semibold text-zinc-700">
+                    <td key={key} className="px-4 py-4 font-mono text-sm font-semibold">
                       {server.score[key as keyof McpServer["score"]]}
                     </td>
                   ))}
                   <td className="px-4 py-4">
+                    <span className="font-mono text-lg font-semibold">{total}</span>
+                    <span className="ml-2 text-xs font-semibold text-[var(--arena-green)]">
+                      {total >= 85 ? "Excellent" : total >= 75 ? "Good" : "Watch"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
                     <span
                       className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold capitalize ${
                         server.risk === "low"
-                          ? "bg-emerald-50 text-emerald-700"
+                          ? "bg-emerald-50 text-[var(--arena-green)]"
                           : server.risk === "medium"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-red-50 text-red-700"
+                            ? "bg-amber-50 text-[var(--arena-amber)]"
+                            : "bg-red-50 text-[var(--arena-red)]"
                       }`}
                     >
                       {server.risk === "high" ? (

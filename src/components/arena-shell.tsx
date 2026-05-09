@@ -4,6 +4,7 @@ import {
   Landmark,
   ListOrdered,
   PanelLeft,
+  Settings,
   Search,
   ShieldCheck,
   SlidersHorizontal,
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/search", label: "Search", icon: Search },
   { href: "/reports/weekly-best-mcp-service", label: "Reports", icon: FileText },
   { href: "/methodology", label: "Methodology", icon: ShieldCheck },
+  { href: "/admin", label: "Admin", icon: Settings },
 ];
 
 type ArenaShellProps = {
@@ -78,6 +80,9 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
               </Link>
               <Link href="/reports/weekly-best-mcp-service" className="hover:text-[var(--arena-ink)]">
                 Reports
+              </Link>
+              <Link href="/admin" className="hover:text-[var(--arena-ink)]">
+                Admin
               </Link>
             </nav>
             <div className="flex items-center gap-2">

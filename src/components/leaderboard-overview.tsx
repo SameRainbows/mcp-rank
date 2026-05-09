@@ -45,7 +45,7 @@ export function LeaderboardOverview({ servers }: LeaderboardOverviewProps) {
               </thead>
               <tbody className="divide-y divide-[var(--arena-line)]">
                 {ranked.map((server, index) => (
-                  <tr key={server.slug} className="hover:bg-[var(--arena-surface)]">
+                  <tr key={server.slug} className="hover:bg-[var(--arena-blue-soft)]">
                     <td className="w-20 px-5 py-3 text-sm font-semibold">{index + 1}</td>
                     <td className="px-5 py-3">
                       <Link href={`/servers/${server.slug}`} className="font-mono text-sm font-medium hover:underline">
@@ -62,7 +62,7 @@ export function LeaderboardOverview({ servers }: LeaderboardOverviewProps) {
             </table>
             <Link
               href="/rankings"
-              className="block border-t border-[var(--arena-line)] py-3 text-center text-sm font-semibold hover:bg-[var(--arena-surface)]"
+              className="block border-t border-[var(--arena-line)] py-3 text-center text-sm font-semibold hover:bg-[var(--arena-blue-soft)]"
             >
               View all
             </Link>

@@ -31,7 +31,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   return (
     <section className="rounded-xl border border-[var(--arena-line)] bg-white shadow-[0_10px_35px_rgba(33,29,24,0.05)]">
       <div className="border-b border-[var(--arena-line)] p-4">
-        <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] px-4">
+        <label className="flex min-h-12 items-center gap-3 rounded-lg border border-[#b9ddec] bg-[#edf8fc] px-4">
           <Search size={17} className="text-[var(--arena-muted)]" aria-hidden="true" />
           <span className="sr-only">Search MCP servers</span>
           <input
@@ -71,7 +71,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           <Link
             key={server.slug}
             href={`/servers/${server.slug}`}
-            className="grid gap-3 p-5 transition hover:bg-[var(--arena-surface)] sm:grid-cols-[1fr_auto]"
+            className="grid gap-3 p-5 transition hover:bg-[var(--arena-blue-soft)] sm:grid-cols-[1fr_auto]"
           >
             <div>
               <div className="flex flex-wrap items-center gap-2">

@@ -47,7 +47,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="flex h-10 min-w-64 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] px-3 text-sm text-[var(--arena-muted)]">
+          <label className="flex h-10 min-w-64 items-center gap-2 rounded-md border border-[#b9ddec] bg-[#edf8fc] px-3 text-sm text-[var(--arena-muted)]">
             <Search size={16} aria-hidden="true" />
             <span className="sr-only">Search servers</span>
             <input
@@ -107,7 +107,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
             {visibleServers.map((server, index) => {
               const total = overallScore(server.score);
               return (
-                <tr key={server.slug} className="align-middle hover:bg-[var(--arena-surface)]">
+                <tr key={server.slug} className="align-middle hover:bg-[var(--arena-blue-soft)]">
                   <td className="px-4 py-4 text-sm font-semibold">{index + 1}</td>
                   <td className="max-w-80 px-4 py-4">
                     <Link

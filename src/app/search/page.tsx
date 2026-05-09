@@ -19,7 +19,7 @@ export default async function SearchPage() {
           <div className="font-serif text-3xl font-semibold">▥ MCP Arena</div>
           <h1 className="mt-8 font-serif text-5xl leading-tight text-[var(--arena-muted)]">
             Search the{" "}
-            <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)]">
+            <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
               registry
             </span>
           </h1>

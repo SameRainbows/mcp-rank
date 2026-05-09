@@ -9,6 +9,9 @@
   --arena-muted: #716a62;
   --arena-line: #e5ddd3;
   --arena-highlight: #f6c915;
+  --arena-blue: #5aaed1;
+  --arena-blue-soft: #edf8fc;
+  --arena-blue-line: #b9ddec;
   --arena-green: #087b47;
   --arena-amber: #b66b00;
   --arena-red: #b42318;
@@ -32,6 +35,6 @@ body {
 }
 
 ::selection {
-  background: #bbf7d0;
-  color: #052e16;
+  background: #cbeefb;
+  color: #153441;
 }

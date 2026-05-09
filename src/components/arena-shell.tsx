@@ -37,7 +37,7 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
               <Link
                 key={item.href}
                 href={item.href}
-                className="group relative flex size-9 items-center justify-center rounded-md text-[var(--arena-muted)] transition hover:bg-[var(--arena-surface)] hover:text-[var(--arena-ink)]"
+                className="group relative flex size-9 items-center justify-center rounded-md text-[var(--arena-muted)] transition hover:bg-[var(--arena-blue-soft)] hover:text-[var(--arena-ink)]"
                 aria-label={item.label}
                 title={item.label}
               >
@@ -64,7 +64,7 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
                 <Landmark size={23} strokeWidth={1.7} aria-hidden="true" />
                 <span className="font-serif text-xl font-semibold tracking-tight">MCP Arena</span>
               </Link>
-              <div className="hidden h-8 items-center gap-2 rounded-md px-2 text-sm font-medium text-[var(--arena-ink)] md:flex">
+              <div className="hidden h-8 items-center gap-2 rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 text-sm font-medium text-[var(--arena-ink)] md:flex">
                 <Swords size={16} aria-hidden="true" />
                 <span>{mode}</span>
               </div>
@@ -83,7 +83,7 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
             <div className="flex items-center gap-2">
               <Link
                 href="/methodology"
-                className="hidden size-9 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-muted)] transition hover:text-[var(--arena-ink)] sm:flex"
+                className="hidden size-9 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-muted)] transition hover:border-[var(--arena-blue-line)] hover:bg-[var(--arena-blue-soft)] hover:text-[var(--arena-ink)] sm:flex"
                 aria-label="Scoring controls"
                 title="Scoring controls"
               >

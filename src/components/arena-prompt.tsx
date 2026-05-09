@@ -13,7 +13,7 @@ export function ArenaPrompt() {
   const [value, setValue] = useState("");
 
   return (
-    <section className="mx-auto w-full max-w-3xl rounded-xl border border-[var(--arena-line)] bg-white p-3 shadow-[0_10px_35px_rgba(33,29,24,0.06)]">
+    <section className="mx-auto w-full max-w-3xl rounded-xl border border-[#9fd2e6] bg-white p-3 shadow-[0_18px_45px_rgba(90,174,209,0.16)]">
       <label className="sr-only" htmlFor="arena-prompt">
         Ask about an MCP server
       </label>
@@ -39,7 +39,7 @@ export function ArenaPrompt() {
                 key={label as string}
                 type="button"
                 onClick={() => setValue(prompts[index % prompts.length])}
-                className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] px-3 text-sm font-medium text-[var(--arena-ink)] transition hover:bg-white"
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] px-3 text-sm font-medium text-[var(--arena-ink)] transition hover:border-[#9fd2e6] hover:bg-[#edf8fc]"
               >
                 <ToolIcon size={15} aria-hidden="true" />
                 <span>{label as string}</span>
@@ -49,7 +49,7 @@ export function ArenaPrompt() {
         </div>
         <button
           type="button"
-          className="flex size-9 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-ink)] transition hover:bg-[var(--arena-highlight)]"
+          className="flex size-9 items-center justify-center rounded-md border border-[#9fd2e6] bg-[#edf8fc] text-[var(--arena-ink)] transition hover:bg-[var(--arena-highlight)]"
           aria-label="Submit MCP Arena prompt"
         >
           <ArrowRight size={17} aria-hidden="true" />

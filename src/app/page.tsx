@@ -20,7 +20,7 @@ export default async function Home() {
     <ArenaShell mode="Battle Mode">
       <main>
         <section className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-2xl items-center divide-x divide-[var(--arena-line)] rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] text-sm text-[var(--arena-ink)]">
+          <div className="mx-auto flex max-w-2xl items-center divide-x divide-[#b9ddec] rounded-lg border border-[#9fd2e6] bg-[#edf8fc] text-sm text-[var(--arena-ink)]">
             <span className="flex items-center gap-2 px-3 py-2">
               <X size={14} aria-hidden="true" />
               Watching registry, Smithery, GLama, GitHub, npm, and PyPI
@@ -37,7 +37,7 @@ export default async function Home() {
             </div>
             <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
               Evaluate the{" "}
-              <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)]">
+                  <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
                 frontier
               </span>
             </h1>

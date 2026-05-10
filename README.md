@@ -16,6 +16,7 @@ MCP server.
 - Scoring methodology at `/methodology`
 - Neon Postgres schema in `db/schema.sql`
 - Vercel Cron job at `/api/cron/refresh-stars`
+- Server-side Azure AI chat endpoint at `/api/chat`
 
 ## Scoring categories
 
@@ -53,10 +54,19 @@ DATABASE_URL=postgres://...
 GITHUB_TOKEN=github_pat_or_fine_grained_token
 ADMIN_TOKEN=shared_secret_for_admin_writes
 CRON_SECRET=shared_secret_for_manual_cron_calls
+MCP_CHAT_ENABLED=true
+AZURE_AI_TARGET_URI=https://forapikeys.services.ai.azure.com
+AZURE_AI_MODEL=Kimi-K2.6
+AZURE_AI_API_VERSION=2024-05-01-preview
+AZURE_AI_API_KEY=rotated_server_side_key
 ```
 
 If `DATABASE_URL` is not set, the app uses the local seed dataset in
 `src/lib/sample-data.ts`.
+
+The chat key must be rotated before use if it was ever pasted into a chat,
+ticket, or document. Store it only in `.env.local` and Vercel environment
+variables; never expose it through `NEXT_PUBLIC_` variables.
 
 ## Deployment
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { ArrowRight, Code2, Globe2, LoaderCircle, Paperclip, RotateCcw, Scale, Terminal } from "lucide-react";
 
 type ChatMessage = {
@@ -171,9 +171,7 @@ export function ArenaPrompt() {
                       <span className="rounded bg-[var(--arena-ink)] px-1.5 py-0.5 text-xs text-white">M</span>
                       MCP Arena
                     </div>
-                    <div className="whitespace-pre-wrap break-words text-sm leading-6 text-[var(--arena-ink)] sm:text-base sm:leading-7">
-                      {message.content || (status !== "idle" ? "Reading MCP Arena evidence..." : "")}
-                    </div>
+                    <AssistantAnswer content={message.content} pendingLabel={status !== "idle" ? "Reading MCP Arena evidence..." : ""} />
                     {message.content && lastUserPrompt && (
                       <button
                         type="button"
@@ -209,6 +207,128 @@ export function ArenaPrompt() {
       )}
     </section>
   );
+}
+
+function AssistantAnswer({ content, pendingLabel }: { content: string; pendingLabel: string }) {
+  if (!content) {
+    return <div className="text-sm leading-6 text-[var(--arena-ink)] sm:text-base sm:leading-7">{pendingLabel}</div>;
+  }
+
+  return <div className="space-y-4 break-words text-sm leading-6 text-[var(--arena-ink)] sm:text-base sm:leading-7">{renderMarkdownBlocks(content)}</div>;
+}
+
+function renderMarkdownBlocks(content: string) {
+  const lines = content.split(/\r?\n/);
+  const blocks: ReactNode[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index]?.trim() ?? "";
+
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      blocks.push(
+        <h3 key={`heading-${index}`} className="text-sm font-semibold text-[var(--arena-ink)] sm:text-base">
+          {renderInlineMarkdown(line.replace(/^###\s+/, ""))}
+        </h3>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (line.startsWith("|")) {
+      const tableLines: string[] = [];
+      while (index < lines.length && lines[index]?.trim().startsWith("|")) {
+        tableLines.push(lines[index]?.trim() ?? "");
+        index += 1;
+      }
+      blocks.push(<MarkdownTable key={`table-${index}`} lines={tableLines} />);
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      const items: string[] = [];
+      while (index < lines.length && lines[index]?.trim().startsWith("- ")) {
+        items.push((lines[index]?.trim() ?? "").replace(/^-\s+/, ""));
+        index += 1;
+      }
+      blocks.push(
+        <ul key={`list-${index}`} className="list-disc space-y-1 pl-5">
+          {items.map((item, itemIndex) => (
+            <li key={`${item}-${itemIndex}`}>{renderInlineMarkdown(item)}</li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (index < lines.length) {
+      const current = lines[index]?.trim() ?? "";
+      if (!current || current.startsWith("### ") || current.startsWith("|") || current.startsWith("- ")) break;
+      paragraphLines.push(current);
+      index += 1;
+    }
+    blocks.push(<p key={`paragraph-${index}`}>{renderInlineMarkdown(paragraphLines.join(" "))}</p>);
+  }
+
+  return blocks;
+}
+
+function MarkdownTable({ lines }: { lines: string[] }) {
+  const rows = lines
+    .filter((line) => !/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line))
+    .map((line) =>
+      line
+        .replace(/^\||\|$/g, "")
+        .split("|")
+        .map((cell) => cell.trim()),
+    )
+    .filter((row) => row.some(Boolean));
+
+  const [head, ...body] = rows;
+  if (!head) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-[var(--arena-line)]">
+      <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+        <thead className="bg-[var(--arena-surface)]">
+          <tr>
+            {head.map((cell, index) => (
+              <th key={`${cell}-${index}`} className="border-b border-[var(--arena-line)] px-3 py-2 font-semibold">
+                {renderInlineMarkdown(cell)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((row, rowIndex) => (
+            <tr key={row.join("-") || rowIndex} className="border-b border-[var(--arena-line)] last:border-0">
+              {row.map((cell, cellIndex) => (
+                <td key={`${cell}-${cellIndex}`} className="px-3 py-2 align-top">
+                  {renderInlineMarkdown(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function renderInlineMarkdown(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+
+    return part;
+  });
 }
 
 type PromptComposerProps = {

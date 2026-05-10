@@ -312,3 +312,63 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
 
   return { error: `Unknown MCP Arena tool: ${name}` };
 }
+
+export async function buildLocalMcpArenaAnswer(prompt: string) {
+  const query = prompt.toLowerCase();
+
+  if (
+    query.includes("safe") ||
+    query.includes("safest") ||
+    query.includes("leaderboard") ||
+    query.includes("rank") ||
+    query.includes("latest")
+  ) {
+    const leaderboard = (await executeMcpChatTool("list_leaderboard", {
+      client: query.includes("codex") ? "codex" : undefined,
+      limit: 5,
+    })) as Array<Record<string, unknown>>;
+
+    const topSafe = (await executeMcpChatTool("list_top_safe_tools", { limit: 5 })) as Array<Record<string, unknown>>;
+    const leaderboardRows = leaderboard
+      .map((server) => `- ${server.name}: ${server.overallScore}/100, ${server.risk} risk`)
+      .join("\n");
+    const safeRows = topSafe
+      .map((tool) => `- ${tool.name}: trust ${tool.trustScore}, confidence ${tool.confidenceScore}`)
+      .join("\n");
+
+    return `MCP Arena is using local evidence mode for this preview.\n\nCurrent MCP Arena leaderboard evidence:\n${leaderboardRows}\n\nConfidence-gated safe-tool list:\n${safeRows}\n\nI am only using reviewed MCP Arena data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
+  }
+
+  if (query.includes("compare") || (query.includes("context7") && query.includes("filesystem"))) {
+    const comparison = (await executeMcpChatTool("compare_servers", {
+      servers: query.includes("context7") || query.includes("filesystem") ? ["Context7", "Filesystem"] : [],
+    })) as { found?: Array<Record<string, unknown>> };
+
+    if (comparison.found?.length) {
+      const rows = comparison.found
+        .map((server) => {
+          const score = server.overallScore ?? "unscored";
+          const risk = server.risk ?? "unknown risk";
+          const cautions = Array.isArray(server.cautions) ? server.cautions.slice(0, 2).join(" ") : "";
+          return `- ${server.name}: ${score}/100, ${risk} risk. ${cautions}`;
+        })
+        .join("\n");
+
+      return `MCP Arena is using local evidence mode for this preview.\n\n${rows}\n\nFor a rollout decision, prefer the lower-risk documentation server when you need library context, and treat local file access as higher blast radius because path scoping controls the real safety profile.`;
+    }
+  }
+
+  if (query.includes("method") || query.includes("trust score") || query.includes("confidence")) {
+    const methodology = (await executeMcpChatTool("get_methodology", {})) as Record<string, unknown>;
+    return `MCP Arena is using local evidence mode for this preview.\n\nMCP Arena separates trust score from confidence. A tool can have a strong draft score but still be excluded from safest lists when confidence is low or unreviewed.\n\nCurrent weighted categories: ${Object.entries(methodology.scoreWeights as Record<string, number>)
+      .map(([key, weight]) => `${key} ${Math.round(weight * 100)}%`)
+      .join(", ")}.`;
+  }
+
+  const search = (await executeMcpChatTool("search_servers", { query: prompt, limit: 5 })) as Array<Record<string, unknown>>;
+  const rows = search.length
+    ? search.map((server) => `- ${server.name}: ${server.overallScore}/100, ${server.risk} risk`).join("\n")
+    : "- No direct server match found in the current MCP Arena review set.";
+
+  return `MCP Arena is using local evidence mode for this preview.\n\nClosest MCP Arena evidence:\n${rows}\n\nI am only using reviewed MCP Arena data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
+}

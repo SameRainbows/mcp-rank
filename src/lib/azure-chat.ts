@@ -1,4 +1,4 @@
-import { executeMcpChatTool, mcpChatToolDefinitions } from "./mcp-chat-tools";
+import { buildLocalMcpArenaAnswer, executeMcpChatTool, mcpChatToolDefinitions } from "./mcp-chat-tools";
 
 export type ChatMessageInput = {
   role: "user" | "assistant";
@@ -208,6 +208,12 @@ async function runToolPlanning(messages: AzureMessage[]) {
 }
 
 export async function streamMcpArenaChat(messages: ChatMessageInput[]) {
+  if (process.env.MCP_CHAT_ENABLED !== "true" || !process.env.AZURE_AI_API_KEY) {
+    const latestUser = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+    const answer = await buildLocalMcpArenaAnswer(latestUser);
+    return textToStream(answer);
+  }
+
   const azureMessages: AzureMessage[] = [
     { role: "system", content: systemPrompt },
     ...messages.map((message) => ({ role: message.role, content: message.content }) satisfies AzureMessage),
@@ -247,6 +253,21 @@ export async function streamMcpArenaChat(messages: ChatMessageInput[]) {
     },
     async cancel() {
       await reader.cancel();
+    },
+  });
+}
+
+function textToStream(text: string) {
+  const encoder = new TextEncoder();
+  const chunks = text.match(/[\s\S]{1,72}(\s|$)/g) ?? [text];
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      for (const chunk of chunks) {
+        controller.enqueue(encoder.encode(chunk));
+        await new Promise((resolve) => setTimeout(resolve, 8));
+      }
+      controller.close();
     },
   });
 }

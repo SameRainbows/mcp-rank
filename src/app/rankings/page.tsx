@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArenaShell } from "@/components/arena-shell";
 import { LeaderboardOverview } from "@/components/leaderboard-overview";
 import { RankingExplorer } from "@/components/ranking-explorer";
+import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServers } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -22,6 +24,14 @@ export default async function RankingsPage() {
             client compatibility, usefulness, and safety. This page is the trust board,
             not a raw directory.
           </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <SubmitServerLink className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
+              Submit MCP Server
+            </SubmitServerLink>
+            <Link href="/methodology" className="rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold">
+              Review methodology
+            </Link>
+          </div>
         </div>
         <LeaderboardOverview servers={servers} />
         <div className="mt-8">

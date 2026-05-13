@@ -32,7 +32,7 @@ export function LeaderboardOverview({ servers }: LeaderboardOverviewProps) {
               </div>
               <span className="flex items-center gap-1 text-xs font-medium text-[var(--arena-muted)]">
                 <Clock3 size={14} aria-hidden="true" />
-                updated today
+                evidence updated today
               </span>
             </div>
             <table className="w-full border-collapse text-left">
@@ -51,7 +51,7 @@ export function LeaderboardOverview({ servers }: LeaderboardOverviewProps) {
                       <Link href={`/servers/${server.slug}`} className="font-mono text-sm font-medium hover:underline">
                         {server.name}
                       </Link>
-                      <p className="mt-1 text-xs text-[var(--arena-muted)]">{server.category}</p>
+                      <p className="mt-1 text-xs text-[var(--arena-muted)]">{server.category} · Reviewed · Medium confidence</p>
                     </td>
                     <td className="px-5 py-3 text-right font-mono text-sm font-semibold">
                       {overallScore(server.score)}

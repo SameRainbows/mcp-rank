@@ -1,17 +1,17 @@
+export function hasAdminAccess(token: string | null | undefined) {
+  return Boolean(process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN);
+}
+
 export function assertAdminRequest(request: Request) {
-  const configuredToken = process.env.ADMIN_TOKEN;
-  const requiresToken = process.env.NODE_ENV === "production" || Boolean(process.env.DATABASE_URL);
-
-  if (!requiresToken) return null;
-
-  if (!configuredToken) {
+  if (!process.env.ADMIN_TOKEN) {
     return Response.json(
-      { error: "ADMIN_TOKEN must be configured before admin writes are enabled." },
+      { error: "Admin access is not configured." },
       { status: 403 },
     );
   }
 
-  if (request.headers.get("x-admin-token") !== configuredToken) {
+  const token = request.headers.get("x-admin-token") || new URL(request.url).searchParams.get("token");
+  if (!hasAdminAccess(token)) {
     return Response.json({ error: "Admin token required." }, { status: 401 });
   }
 

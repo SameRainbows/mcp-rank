@@ -1,23 +1,24 @@
 import Link from "next/link";
 import {
   FileText,
+  Info,
   Landmark,
   ListOrdered,
   PanelLeft,
-  Settings,
   Search,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
-  Swords,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Battle Mode", icon: Swords },
+  { href: "/", label: "Home", icon: Landmark },
   { href: "/rankings", label: "Leaderboard", icon: ListOrdered },
   { href: "/search", label: "Search", icon: Search },
   { href: "/reports/weekly-best-mcp-service", label: "Reports", icon: FileText },
   { href: "/methodology", label: "Methodology", icon: ShieldCheck },
-  { href: "/admin", label: "Admin", icon: Settings },
+  { href: "/about", label: "About", icon: Info },
+  { href: "/submit", label: "Submit", icon: Send },
 ];
 
 type ArenaShellProps = {
@@ -25,7 +26,7 @@ type ArenaShellProps = {
   mode?: string;
 };
 
-export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) {
+export function ArenaShell({ children, mode = "Trust Index" }: ArenaShellProps) {
   return (
     <div className="min-h-screen bg-[var(--arena-bg)] text-[var(--arena-ink)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-14 flex-col border-r border-[var(--arena-line)] bg-[var(--arena-bg)] md:flex">
@@ -64,10 +65,10 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
             <div className="flex min-w-0 items-center gap-4">
               <Link href="/" className="flex shrink-0 items-center gap-2">
                 <Landmark size={23} strokeWidth={1.7} aria-hidden="true" />
-                <span className="font-serif text-xl font-semibold tracking-tight">MCP Arena</span>
+                <span className="font-serif text-xl font-semibold tracking-tight">MCP Rank</span>
               </Link>
               <div className="hidden h-8 items-center gap-2 rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 text-sm font-medium text-[var(--arena-ink)] md:flex">
-                <Swords size={16} aria-hidden="true" />
+                <ShieldCheck size={16} aria-hidden="true" />
                 <span>{mode}</span>
               </div>
             </div>
@@ -81,8 +82,11 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
               <Link href="/reports/weekly-best-mcp-service" className="hover:text-[var(--arena-ink)]">
                 Reports
               </Link>
-              <Link href="/admin" className="hover:text-[var(--arena-ink)]">
-                Admin
+              <Link href="/about" className="hover:text-[var(--arena-ink)]">
+                About
+              </Link>
+              <Link href="/submit" className="hover:text-[var(--arena-ink)]">
+                Submit
               </Link>
             </nav>
             <div className="flex items-center gap-2">
@@ -98,12 +102,33 @@ export function ArenaShell({ children, mode = "Battle Mode" }: ArenaShellProps) 
                 href="/rankings"
                 className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
               >
-                Start Review
+                View Leaderboard
               </Link>
             </div>
           </div>
         </header>
         {children}
+        <footer className="border-t border-[var(--arena-line)] bg-[color-mix(in_srgb,var(--arena-bg)_88%,white)]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 text-sm text-[var(--arena-muted)] sm:px-6 lg:px-8">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 font-medium">
+              <Link href="/about" className="hover:text-[var(--arena-ink)]">
+                About
+              </Link>
+              <Link href="/methodology" className="hover:text-[var(--arena-ink)]">
+                Methodology
+              </Link>
+              <Link href="/submit" className="hover:text-[var(--arena-ink)]">
+                Submit MCP Server
+              </Link>
+              <Link href="/privacy" className="hover:text-[var(--arena-ink)]">
+                Privacy
+              </Link>
+            </div>
+            <p>
+              MCP Rank is independent and not affiliated with Anthropic, OpenAI, GitHub, or the official MCP project.
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );

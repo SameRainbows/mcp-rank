@@ -29,7 +29,7 @@ function checkRateLimit(request: NextRequest) {
 
   if (current.count >= maxRequests) {
     return Response.json(
-      { error: "Too many MCP Arena chat requests. Please wait a minute and try again." },
+      { error: "Too many MCP Rank evidence requests. Please wait a minute and try again." },
       { status: 429 },
     );
   }

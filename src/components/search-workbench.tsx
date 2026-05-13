@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import { overallScore } from "@/lib/scoring";
 import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
@@ -36,7 +37,10 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           <span className="sr-only">Search MCP servers</span>
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              if (event.target.value.trim()) trackEvent("search_query", { length: event.target.value.length });
+            }}
             placeholder="Search by workflow, package, client, or risk signal..."
             className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
           />

@@ -1,4 +1,5 @@
 import { getServer, getServers, getWeeklyReport } from "./data";
+import { defaultConfidence, defaultReviewStatus, evidenceUpdatedAt, serverPath } from "./server-derived";
 import { overallScore, scoreLabels, scoreWeights } from "./scoring";
 import { listTopSafeMcpTools } from "./tool-store";
 import type { ClientKey, McpServer, RiskLevel } from "./types";
@@ -29,7 +30,7 @@ export const mcpChatToolDefinitions: ChatToolDefinition[] = [
     type: "function",
     function: {
       name: "list_leaderboard",
-      description: "List ranked MCP Arena servers, optionally filtered by category, risk, or client.",
+      description: "List ranked MCP Rank servers, optionally filtered by category, risk, or client.",
       parameters: {
         type: "object",
         properties: {
@@ -46,7 +47,7 @@ export const mcpChatToolDefinitions: ChatToolDefinition[] = [
     type: "function",
     function: {
       name: "get_server_review",
-      description: "Get the complete MCP Arena review for one server by slug or name.",
+      description: "Get the complete MCP Rank review for one server by slug or name.",
       parameters: {
         type: "object",
         properties: {
@@ -82,7 +83,7 @@ export const mcpChatToolDefinitions: ChatToolDefinition[] = [
     type: "function",
     function: {
       name: "search_servers",
-      description: "Search MCP Arena server reviews by name, category, package, signal, caution, evidence, or example.",
+      description: "Search MCP Rank server reviews by name, category, package, signal, caution, evidence, or example.",
       parameters: {
         type: "object",
         properties: {
@@ -98,7 +99,7 @@ export const mcpChatToolDefinitions: ChatToolDefinition[] = [
     type: "function",
     function: {
       name: "get_methodology",
-      description: "Explain MCP Arena scoring weights, score labels, and confidence-gated safety ranking rules.",
+      description: "Explain MCP Rank scoring weights, score labels, and confidence-gated safety ranking rules.",
       parameters: {
         type: "object",
         properties: {},
@@ -159,6 +160,10 @@ function compactServer(server: McpServer) {
     clients: server.clients,
     stars: server.stars,
     lastReviewed: server.lastReviewed,
+    evidenceUpdated: evidenceUpdatedAt(server),
+    status: defaultReviewStatus,
+    confidence: defaultConfidence,
+    pagePath: serverPath(server),
     tagline: server.tagline,
     topSignals: server.signals.slice(0, 4),
     cautions: server.cautions.slice(0, 3),
@@ -196,7 +201,12 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
 
   if (name === "get_server_review") {
     const server = await findServer(args.server);
-    if (!server) return { found: false, message: "No MCP Arena server review matched that name or slug." };
+    if (!server) {
+      return {
+        found: false,
+        message: "I don't have enough reviewed evidence yet for that MCP server. Check the leaderboard or submit it for review.",
+      };
+    }
 
     return {
       found: true,
@@ -263,7 +273,7 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
         "Trust score and confidence score are separate.",
         "Top safest lists must exclude unreviewed and low-confidence rows.",
         "Use list_top_safe_tools for confidence-gated safety recommendations from mcp_tools.",
-        "If MCP Arena has no evidence for a server, say so instead of guessing.",
+        "If MCP Rank has no reviewed evidence for a server, say: I don't have enough reviewed evidence yet.",
       ],
       reviewedSignals: [
         "Install success and documentation quality",
@@ -310,11 +320,19 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
     }));
   }
 
-  return { error: `Unknown MCP Arena tool: ${name}` };
+  return { error: `Unknown MCP Rank tool: ${name}` };
 }
 
 export async function buildLocalMcpArenaAnswer(prompt: string) {
   const query = prompt.toLowerCase();
+
+  if (query.includes("slack")) {
+    const review = (await executeMcpChatTool("get_server_review", { server: "slack" })) as Record<string, unknown>;
+    if (review.found) {
+      const cautions = Array.isArray(review.cautions) ? review.cautions.slice(0, 2).join(" ") : "";
+      return `MCP Rank reviewed evidence does not support calling Slack safe.\n\nSlack MCP Server is listed at ${review.pagePath} with score ${review.overallScore}/100, ${review.risk} risk, ${review.confidence} confidence, and status ${review.status}. Reviewed date: ${review.lastReviewed}.\n\nCautions: ${cautions}`;
+    }
+  }
 
   if (
     query.includes("safe") ||
@@ -336,7 +354,7 @@ export async function buildLocalMcpArenaAnswer(prompt: string) {
       .map((tool) => `- ${tool.name}: trust ${tool.trustScore}, confidence ${tool.confidenceScore}`)
       .join("\n");
 
-    return `MCP Arena is using local evidence mode for this preview.\n\nCurrent MCP Arena leaderboard evidence:\n${leaderboardRows}\n\nConfidence-gated safe-tool list:\n${safeRows}\n\nI am only using reviewed MCP Arena data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
+    return `MCP Rank is using local evidence mode for this preview.\n\nCurrent MCP Rank leaderboard evidence:\n${leaderboardRows}\n\nConfidence-gated safe-tool list:\n${safeRows}\n\nI am only using reviewed MCP Rank data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
   }
 
   if (query.includes("compare") || (query.includes("context7") && query.includes("filesystem"))) {
@@ -354,13 +372,13 @@ export async function buildLocalMcpArenaAnswer(prompt: string) {
         })
         .join("\n");
 
-      return `MCP Arena is using local evidence mode for this preview.\n\n${rows}\n\nFor a rollout decision, prefer the lower-risk documentation server when you need library context, and treat local file access as higher blast radius because path scoping controls the real safety profile.`;
+      return `MCP Rank is using local evidence mode for this preview.\n\n${rows}\n\nFor a rollout decision, prefer the lower-risk documentation server when you need library context, and treat local file access as higher blast radius because path scoping controls the real safety profile.`;
     }
   }
 
   if (query.includes("method") || query.includes("trust score") || query.includes("confidence")) {
     const methodology = (await executeMcpChatTool("get_methodology", {})) as Record<string, unknown>;
-    return `MCP Arena is using local evidence mode for this preview.\n\nMCP Arena separates trust score from confidence. A tool can have a strong draft score but still be excluded from safest lists when confidence is low or unreviewed.\n\nCurrent weighted categories: ${Object.entries(methodology.scoreWeights as Record<string, number>)
+    return `MCP Rank is using local evidence mode for this preview.\n\nMCP Rank separates trust score from confidence. A tool can have a strong draft score but still be excluded from safest lists when confidence is low or unreviewed.\n\nCurrent weighted categories: ${Object.entries(methodology.scoreWeights as Record<string, number>)
       .map(([key, weight]) => `${key} ${Math.round(weight * 100)}%`)
       .join(", ")}.`;
   }
@@ -368,7 +386,7 @@ export async function buildLocalMcpArenaAnswer(prompt: string) {
   const search = (await executeMcpChatTool("search_servers", { query: prompt, limit: 5 })) as Array<Record<string, unknown>>;
   const rows = search.length
     ? search.map((server) => `- ${server.name}: ${server.overallScore}/100, ${server.risk} risk`).join("\n")
-    : "- No direct server match found in the current MCP Arena review set.";
+    : "- I don't have enough reviewed evidence yet for that MCP server.";
 
-  return `MCP Arena is using local evidence mode for this preview.\n\nClosest MCP Arena evidence:\n${rows}\n\nI am only using reviewed MCP Arena data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
+  return `MCP Rank is using local evidence mode for this preview.\n\nClosest MCP Rank evidence:\n${rows}\n\nI am only using reviewed MCP Rank data here. The full model-backed reviewer will use these same read-only tools for deeper natural-language analysis.`;
 }

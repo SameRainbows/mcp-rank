@@ -8,7 +8,7 @@ import { overallScore } from "@/lib/scoring";
 
 export const metadata: Metadata = {
   title: "Best MCP Server This Week",
-  description: "The weekly MCP Arena report on the safest and most useful MCP server to install.",
+  description: "The weekly MCP Rank report on the safest and most useful MCP server to install.",
 };
 
 export default async function WeeklyBestReportPage() {

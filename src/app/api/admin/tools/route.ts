@@ -6,6 +6,9 @@ import type { McpToolInput } from "@/lib/tool-types";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  const blocked = assertAdminRequest(request);
+  if (blocked) return blocked;
+
   const status = request.nextUrl.searchParams.get("status") as "reviewed" | "unreviewed" | "all" | null;
   const tools = await listMcpTools(status ?? "all");
 

@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { ArrowRight, Code2, Globe2, LoaderCircle, Paperclip, RotateCcw, Scale, Terminal } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 type ChatMessage = {
   id: string;
@@ -24,7 +25,7 @@ const promptTools = [
   {
     icon: Globe2,
     label: "Signals",
-    prompt: "Summarize the evidence MCP Arena has for GitHub MCP Server, Context7, and Filesystem.",
+    prompt: "Summarize the evidence MCP Rank has for GitHub MCP Server, Context7, and Filesystem.",
   },
   {
     icon: Scale,
@@ -69,6 +70,7 @@ export function ArenaPrompt() {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    trackEvent("assistant_query", { promptLength: prompt.length });
 
     const assistantId = newId("assistant");
     const nextMessages = retryMessage
@@ -90,7 +92,7 @@ export function ArenaPrompt() {
 
       if (!response.ok || !response.body) {
         const data = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error ?? "MCP Arena analysis is unavailable right now.");
+        throw new Error(data?.error ?? "MCP Rank evidence search is unavailable right now.");
       }
 
       setStatus("streaming");
@@ -109,7 +111,7 @@ export function ArenaPrompt() {
       }
     } catch (caught) {
       if ((caught as Error).name === "AbortError") return;
-      const message = caught instanceof Error ? caught.message : "MCP Arena analysis failed.";
+      const message = caught instanceof Error ? caught.message : "MCP Rank evidence search failed.";
       setMessages((current) =>
         current.map((item) => (item.id === assistantId ? { ...item, content: message } : item)),
       );
@@ -141,7 +143,7 @@ export function ArenaPrompt() {
           <div className="border-b border-[var(--arena-line)] px-4 py-3 sm:px-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold">MCP Arena review</div>
+                <div className="text-sm font-semibold">MCP Evidence Assistant</div>
                 <p className="mt-1 text-xs leading-5 text-[var(--arena-muted)]">
                   Evidence from leaderboards, server reviews, and confidence-gated tool records.
                 </p>
@@ -169,9 +171,9 @@ export function ArenaPrompt() {
                   <div key={message.id} className="max-w-3xl">
                     <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
                       <span className="rounded bg-[var(--arena-ink)] px-1.5 py-0.5 text-xs text-white">M</span>
-                      MCP Arena
+                      MCP Rank
                     </div>
-                    <AssistantAnswer content={message.content} pendingLabel={status !== "idle" ? "Reading MCP Arena evidence..." : ""} />
+                    <AssistantAnswer content={message.content} pendingLabel={status !== "idle" ? "Reading MCP Rank evidence..." : ""} />
                     {message.content && lastUserPrompt && (
                       <button
                         type="button"
@@ -202,7 +204,7 @@ export function ArenaPrompt() {
 
       {!hasConversation && (
         <p className="mt-3 text-center text-xs leading-5 text-[var(--arena-muted)]">
-          Answers are generated from MCP Arena ranking evidence and may be incomplete.
+          Answers use MCP Rank&apos;s reviewed dataset and may say there is not enough evidence.
         </p>
       )}
     </section>
@@ -344,7 +346,7 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
   return (
     <form onSubmit={onSubmit} className={compact ? "border-t border-[var(--arena-line)] p-3" : "p-3"}>
       <label className="sr-only" htmlFor="arena-prompt">
-        Ask about an MCP server
+        Search MCP Rank evidence
       </label>
       <textarea
         id="arena-prompt"
@@ -355,7 +357,7 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
             event.currentTarget.form?.requestSubmit();
           }
         }}
-        placeholder={status === "idle" ? "Ask about MCP servers, rankings, risk, or rollout..." : "Working..."}
+        placeholder={status === "idle" ? "Search MCP Rank evidence, scores, risks, or rollout notes..." : "Working..."}
         maxLength={2000}
         className={`${compact ? "min-h-16" : "min-h-24"} w-full resize-none bg-transparent px-2 py-2 text-base leading-7 text-[var(--arena-ink)] outline-none placeholder:text-zinc-400`}
       />
@@ -377,7 +379,7 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
           type="submit"
           disabled={!canSubmit}
           className="flex size-10 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-ink)] transition hover:bg-[var(--arena-blue-soft)] disabled:cursor-not-allowed disabled:opacity-45"
-          aria-label="Submit MCP Arena prompt"
+          aria-label="Submit MCP Rank evidence search"
         >
           {status === "idle" ? (
             <ArrowRight size={18} aria-hidden="true" />

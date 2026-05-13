@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, CheckCircle2, CircleAlert, Search, SlidersHorizontal } from "lucide-react";
+import { defaultConfidence, defaultReviewStatus } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
 import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
@@ -43,7 +44,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
         <div>
           <h2 className="font-serif text-3xl font-semibold">MCP Leaderboard</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
-            Ranked by reproducible install checks, evidence quality, compatibility, usefulness, and safety.
+            Ranked by reviewed evidence, install checks, compatibility, usefulness, and safety. Safest lists exclude unreviewed and low-confidence tools.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -93,13 +94,14 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
               <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Server</th>
               <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Review</th>
               {Object.values(scoreLabels).map((label) => (
                 <th key={label} className="px-4 py-3">
                   {label}
                   <span className="block font-normal">/100</span>
                 </th>
               ))}
-              <th className="px-4 py-3">MCP Arena</th>
+              <th className="px-4 py-3">MCP Rank</th>
               <th className="px-4 py-3">Risk</th>
             </tr>
           </thead>
@@ -124,6 +126,10 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
                     <p className="mt-1 line-clamp-2 text-sm leading-5 text-[var(--arena-muted)]">{server.tagline}</p>
                   </td>
                   <td className="px-4 py-4 text-sm text-[var(--arena-muted)]">{server.category}</td>
+                  <td className="px-4 py-4 text-sm">
+                    <span className="block font-semibold">{defaultReviewStatus}</span>
+                    <span className="text-xs text-[var(--arena-muted)]">{defaultConfidence} confidence</span>
+                  </td>
                   {Object.keys(scoreLabels).map((key) => (
                     <td key={key} className="px-4 py-4 font-mono text-sm font-semibold">
                       {server.score[key as keyof McpServer["score"]]}

@@ -1,13 +1,13 @@
-# MCP Arena
+# MCP Rank
 
-MCP Arena is a Next.js trust index and comparison surface for MCP servers. The
+MCP Rank is a Next.js trust index and comparison surface for MCP servers. The
 product ranks servers for quality, trust, safety, client compatibility, and real
 usefulness so developers and AI teams can review evidence before installing an
 MCP server.
 
 ## What is included
 
-- Battle/search surface at `/`
+- Trust index surface at `/`
 - Public leaderboard at `/rankings`
 - Search workbench at `/search`
 - CSV-first admin workflow at `/admin`

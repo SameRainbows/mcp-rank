@@ -3,6 +3,7 @@ import { ArrowUpRight, CheckCircle2, X } from "lucide-react";
 import { ArenaPrompt } from "@/components/arena-prompt";
 import { ArenaShell } from "@/components/arena-shell";
 import { LeaderboardOverview } from "@/components/leaderboard-overview";
+import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServer, getServers, getWeeklyReport } from "@/lib/data";
 import { overallScore } from "@/lib/scoring";
 
@@ -17,13 +18,13 @@ export default async function Home() {
   if (!report || !leader) return null;
 
   return (
-    <ArenaShell mode="Battle Mode">
+    <ArenaShell mode="Trust Index">
       <main>
         <section className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-2xl items-center divide-x divide-[#b9ddec] rounded-lg border border-[#9fd2e6] bg-[#edf8fc] text-sm text-[var(--arena-ink)]">
             <span className="flex items-center gap-2 px-3 py-2">
               <X size={14} aria-hidden="true" />
-              Watching registry, Smithery, GLama, GitHub, npm, and PyPI
+              Tracking reviewed MCP servers, source evidence, risk, and confidence
             </span>
             <Link href="/methodology" className="px-3 py-2 font-semibold hover:bg-white">
               Method
@@ -33,18 +34,29 @@ export default async function Home() {
           <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
             <div className="flex items-center gap-2 font-serif text-2xl font-semibold">
               <span className="text-3xl leading-none">▥</span>
-              MCP Arena
+              MCP Rank
             </div>
             <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
-              Evaluate the{" "}
-                  <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
-                frontier
+              Rank MCP servers{" "}
+              <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
+                before install
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--arena-muted)] sm:text-lg">
               Compare MCP servers before they touch your tools, repos, databases, workspaces,
               browsers, or customer systems.
             </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/rankings"
+                className="rounded-md bg-[var(--arena-ink)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-black"
+              >
+                View Leaderboard
+              </Link>
+              <SubmitServerLink className="rounded-md border border-[var(--arena-line)] bg-white px-5 py-3 text-sm font-semibold transition hover:bg-[var(--arena-blue-soft)]">
+                Submit MCP Server
+              </SubmitServerLink>
+            </div>
             <div className="mt-10 w-full">
               <ArenaPrompt />
             </div>

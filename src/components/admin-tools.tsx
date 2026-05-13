@@ -72,16 +72,17 @@ type StatusFilter = "all" | "reviewed" | "unreviewed";
 type AdminToolsProps = {
   initialTools: McpTool[];
   persisted: boolean;
+  initialAdminToken?: string;
 };
 
-export function AdminTools({ initialTools, persisted }: AdminToolsProps) {
+export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: AdminToolsProps) {
   const [tools, setTools] = useState<McpTool[]>(initialTools);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [message, setMessage] = useState(
-    persisted ? "Database persistence active." : "Using local fallback until DATABASE_URL is set.",
+    persisted ? "Database persistence active." : "Private seed-data mode active.",
   );
   const [loading, setLoading] = useState(false);
-  const [adminToken, setAdminToken] = useState("");
+  const [adminToken, setAdminToken] = useState(initialAdminToken);
 
   function adminHeaders() {
     return {
@@ -92,10 +93,10 @@ export function AdminTools({ initialTools, persisted }: AdminToolsProps) {
 
   async function loadTools(nextFilter = filter) {
     setLoading(true);
-    const response = await fetch(`/api/admin/tools?status=${nextFilter}`, { cache: "no-store" });
+    const response = await fetch(`/api/admin/tools?status=${nextFilter}`, { cache: "no-store", headers: adminHeaders() });
     const data = (await response.json()) as { tools: McpTool[]; persisted: boolean };
     setTools(data.tools);
-    setMessage(data.persisted ? "Database persistence active." : "Using local fallback until DATABASE_URL is set.");
+    setMessage(data.persisted ? "Database persistence active." : "Private seed-data mode active.");
     setLoading(false);
   }
 

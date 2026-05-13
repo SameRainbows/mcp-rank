@@ -4,7 +4,7 @@ import { scoreLabels, scoreWeights } from "@/lib/scoring";
 
 export const metadata: Metadata = {
   title: "Methodology",
-  description: "How MCP Arena scores MCP servers for quality, trust, safety, and usefulness.",
+  description: "How MCP Rank scores MCP servers for quality, trust, safety, and usefulness.",
 };
 
 const sources = [
@@ -21,7 +21,7 @@ export default function MethodologyPage() {
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
         <h1 className="font-serif text-4xl font-semibold">Scoring methodology</h1>
         <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">
-          MCP Arena starts with manual and semi-automated review because trust data needs
+          MCP Rank starts with manual and semi-automated review because trust data needs
           judgment. The automation pipeline is designed to gather signals, not pretend
           every risk can be reduced to a star count.
         </p>
@@ -59,13 +59,20 @@ export default function MethodologyPage() {
         <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
           <h2 className="font-serif text-2xl font-semibold">Viable product path</h2>
           <ol className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)]">
-            <li>1. Normalize registry, Smithery, GLama, GitHub, npm, and PyPI candidates.</li>
-            <li>2. Run reproducible install checks and collect client compatibility notes.</li>
-            <li>3. Refresh GitHub stars and maintenance signals daily through Vercel Cron.</li>
-            <li>4. Store scoring snapshots in Neon so every score change is explainable.</li>
-            <li>5. Add side-by-side battles for install success, scopes, examples, and data exposure.</li>
-            <li>6. Publish weekly reports that separate recommendation from raw popularity.</li>
+            <li>Normalize registry, Smithery, GLama, GitHub, npm, and PyPI candidates.</li>
+            <li>Run reproducible install checks and collect client compatibility notes.</li>
+            <li>Refresh GitHub stars and maintenance signals daily through Vercel Cron.</li>
+            <li>Store scoring snapshots in Neon so every score change is explainable.</li>
+            <li>Add side-by-side comparisons for install success, scopes, examples, and data exposure.</li>
+            <li>Publish weekly reports that separate recommendation from raw popularity.</li>
           </ol>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
+          <h2 className="font-serif text-2xl font-semibold">Independence disclaimer</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            MCP Rank is independent and not affiliated with Anthropic, OpenAI, GitHub, or the official MCP project. Scores are review signals, not certifications.
+          </p>
         </section>
       </main>
     </ArenaShell>

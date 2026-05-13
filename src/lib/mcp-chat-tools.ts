@@ -145,6 +145,14 @@ function normalize(value: string) {
   return value.toLowerCase().trim();
 }
 
+function cleanToolText(value: unknown, maxLength = 240) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
 function rankedServers(servers: McpServer[]) {
   return [...servers].sort((a, b) => overallScore(b.score) - overallScore(a.score));
 }
@@ -171,7 +179,7 @@ function compactServer(server: McpServer) {
 }
 
 async function findServer(value: unknown) {
-  const query = normalize(String(value ?? ""));
+  const query = normalize(cleanToolText(value, 120));
   if (!query) return null;
 
   const servers = await getServers();
@@ -186,7 +194,7 @@ async function findServer(value: unknown) {
 export async function executeMcpChatTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
   if (name === "list_leaderboard") {
     const servers = await getServers();
-    const category = normalize(String(args.category ?? ""));
+    const category = normalize(cleanToolText(args.category, 80));
     const risk = riskLevels.includes(args.risk as RiskLevel) ? (args.risk as RiskLevel) : null;
     const client = clientKeys.includes(args.client as ClientKey) ? (args.client as ClientKey) : null;
     const limit = clampLimit(args.limit, 10);
@@ -238,7 +246,7 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
   }
 
   if (name === "search_servers") {
-    const query = normalize(String(args.query ?? ""));
+    const query = normalize(cleanToolText(args.query, 160));
     const limit = clampLimit(args.limit, 6);
     if (!query) return [];
 

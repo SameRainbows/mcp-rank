@@ -37,9 +37,9 @@ export default async function Home() {
               MCP Rank
             </div>
             <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
-              The trust layer for{" "}
+              evaluate the{" "}
               <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
-                MCP servers
+                frontier
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--arena-muted)] sm:text-lg">

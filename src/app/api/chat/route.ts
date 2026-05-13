@@ -40,9 +40,16 @@ function checkRateLimit(request: NextRequest) {
 
 function checkSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  if (!origin) return null;
+  if (!origin) {
+    return Response.json({ error: "Same-origin chat requests are required." }, { status: 403 });
+  }
 
-  const expected = `${request.nextUrl.protocol}//${request.headers.get("host")}`;
+  const host = request.headers.get("host");
+  if (!host) {
+    return Response.json({ error: "Same-origin chat requests are required." }, { status: 403 });
+  }
+
+  const expected = `${request.nextUrl.protocol}//${host}`;
   if (origin !== expected) {
     return Response.json({ error: "Cross-origin chat requests are not allowed." }, { status: 403 });
   }

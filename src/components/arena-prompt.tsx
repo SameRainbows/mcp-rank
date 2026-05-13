@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { ArrowRight, Code2, Globe2, LoaderCircle, Paperclip, RotateCcw, Scale, Terminal } from "lucide-react";
+import { ArrowRight, CheckCircle2, Code2, Globe2, LoaderCircle, Paperclip, RotateCcw, Scale, Terminal } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 type ChatMessage = {
@@ -39,6 +39,13 @@ const promptTools = [
   },
 ];
 
+const evidenceSteps = [
+  "Finding matching reviewed servers",
+  "Checking scores, risks, and confidence gates",
+  "Reading source notes and cautions",
+  "Preparing a cited answer",
+];
+
 function newId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -56,11 +63,23 @@ export function ArenaPrompt() {
   const [value, setValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "streaming">("idle");
+  const [activityIndex, setActivityIndex] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
   const hasConversation = messages.length > 0;
   const canSubmit = useMemo(() => value.trim().length > 0 && status === "idle", [status, value]);
   const lastUserPrompt = [...messages].reverse().find((message) => message.role === "user")?.content;
+  const activeAssistantId = useMemo(() => messages.findLast((message) => message.role === "assistant")?.id, [messages]);
+
+  useEffect(() => {
+    if (status === "idle") return;
+
+    const timer = window.setInterval(() => {
+      setActivityIndex((current) => Math.min(current + 1, evidenceSteps.length - 1));
+    }, 850);
+
+    return () => window.clearInterval(timer);
+  }, [status]);
 
   async function submitPrompt(event?: FormEvent<HTMLFormElement>, retryMessage?: string) {
     event?.preventDefault();
@@ -77,6 +96,7 @@ export function ArenaPrompt() {
       ? trimToLastUser(messages)
       : [...messages, { id: newId("user"), role: "user" as const, content: prompt }];
 
+    setActivityIndex(0);
     setMessages([...nextMessages, { id: assistantId, role: "assistant", content: "" }]);
     setValue("");
     setStatus("loading");
@@ -129,6 +149,7 @@ export function ArenaPrompt() {
     abortRef.current?.abort();
     setMessages([]);
     setValue("");
+    setActivityIndex(0);
     setStatus("idle");
   }
 
@@ -173,7 +194,14 @@ export function ArenaPrompt() {
                       <span className="rounded bg-[var(--arena-ink)] px-1.5 py-0.5 text-xs text-white">M</span>
                       MCP Rank
                     </div>
-                    <AssistantAnswer content={message.content} pendingLabel={status !== "idle" ? "Reading MCP Rank evidence..." : ""} />
+                    {message.id === activeAssistantId && status !== "idle" && (
+                      <AssistantActivity
+                        activeStep={activityIndex}
+                        compact={Boolean(message.content)}
+                        status={status}
+                      />
+                    )}
+                    {message.content && <AssistantAnswer content={message.content} />}
                     {message.content && lastUserPrompt && (
                       <button
                         type="button"
@@ -211,11 +239,67 @@ export function ArenaPrompt() {
   );
 }
 
-function AssistantAnswer({ content, pendingLabel }: { content: string; pendingLabel: string }) {
-  if (!content) {
-    return <div className="text-sm leading-6 text-[var(--arena-ink)] sm:text-base sm:leading-7">{pendingLabel}</div>;
+function AssistantActivity({
+  activeStep,
+  compact,
+  status,
+}: {
+  activeStep: number;
+  compact: boolean;
+  status: "loading" | "streaming";
+}) {
+  if (compact) {
+    return (
+      <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[#b9ddec] bg-[#edf8fc] px-3 py-1.5 text-xs font-medium text-[var(--arena-muted)]">
+        <LoaderCircle size={14} className="shrink-0 animate-spin text-[var(--arena-green)]" aria-hidden="true" />
+        <span>{status === "streaming" ? "Streaming cited answer" : evidenceSteps[activeStep]}</span>
+      </div>
+    );
   }
 
+  return (
+    <div className="rounded-lg border border-[#b9ddec] bg-[#f5fbfd] p-4 text-sm text-[var(--arena-ink)]">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="font-semibold">Reviewing MCP Rank evidence</div>
+          <p className="mt-1 text-xs leading-5 text-[var(--arena-muted)]">
+            Using reviewed server pages, leaderboard scores, and confidence gates.
+          </p>
+        </div>
+        <LoaderCircle size={18} className="shrink-0 animate-spin text-[var(--arena-green)]" aria-hidden="true" />
+      </div>
+      <div className="mt-4 grid gap-2">
+        {evidenceSteps.map((step, index) => {
+          const isComplete = index < activeStep;
+          const isActive = index === activeStep;
+
+          return (
+            <div
+              key={step}
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${
+                isActive ? "bg-white shadow-sm" : "text-[var(--arena-muted)]"
+              }`}
+            >
+              {isComplete ? (
+                <CheckCircle2 size={15} className="shrink-0 text-[var(--arena-green)]" aria-hidden="true" />
+              ) : (
+                <span
+                  className={`size-2.5 shrink-0 rounded-full ${
+                    isActive ? "animate-pulse bg-[var(--arena-green)]" : "bg-[#c8d7dc]"
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <span className={isActive ? "font-semibold" : undefined}>{step}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AssistantAnswer({ content }: { content: string }) {
   return <div className="space-y-4 break-words text-sm leading-6 text-[var(--arena-ink)] sm:text-base sm:leading-7">{renderMarkdownBlocks(content)}</div>;
 }
 
@@ -345,6 +429,19 @@ type PromptComposerProps = {
 function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit }: PromptComposerProps) {
   return (
     <form onSubmit={onSubmit} className={compact ? "border-t border-[var(--arena-line)] p-3" : "p-3"}>
+      {!compact && (
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3 rounded-lg bg-[color-mix(in_srgb,var(--arena-blue-soft)_65%,white)] px-3 py-3">
+          <div>
+            <div className="text-sm font-semibold text-[var(--arena-ink)]">MCP Evidence Assistant</div>
+            <p className="mt-1 text-xs leading-5 text-[var(--arena-muted)]">
+              Ask for scores, confidence, source evidence, comparisons, and rollout cautions.
+            </p>
+          </div>
+          <span className="rounded-full border border-[#b9ddec] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--arena-muted)]">
+            Reviewed data only
+          </span>
+        </div>
+      )}
       <label className="sr-only" htmlFor="arena-prompt">
         Search MCP Rank evidence
       </label>
@@ -353,7 +450,8 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault();
             event.currentTarget.form?.requestSubmit();
           }
         }}
@@ -362,7 +460,7 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
         className={`${compact ? "min-h-16" : "min-h-24"} w-full resize-none bg-transparent px-2 py-2 text-base leading-7 text-[var(--arena-ink)] outline-none placeholder:text-zinc-400`}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           {promptTools.map(({ icon: ToolIcon, label, prompt }) => (
             <button
               key={label}
@@ -375,18 +473,23 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
             </button>
           ))}
         </div>
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="flex size-10 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-ink)] transition hover:bg-[var(--arena-blue-soft)] disabled:cursor-not-allowed disabled:opacity-45"
-          aria-label="Submit MCP Rank evidence search"
-        >
-          {status === "idle" ? (
-            <ArrowRight size={18} aria-hidden="true" />
-          ) : (
-            <LoaderCircle size={18} className="animate-spin" aria-hidden="true" />
-          )}
-        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="hidden text-xs text-[var(--arena-muted)] sm:inline">
+            Enter to send · Shift+Enter for newline
+          </span>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="flex size-10 items-center justify-center rounded-md border border-[var(--arena-line)] bg-white text-[var(--arena-ink)] transition hover:bg-[var(--arena-blue-soft)] disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label="Submit MCP Rank evidence search"
+          >
+            {status === "idle" ? (
+              <ArrowRight size={18} aria-hidden="true" />
+            ) : (
+              <LoaderCircle size={18} className="animate-spin" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );

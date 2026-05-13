@@ -24,7 +24,7 @@ export default async function Home() {
           <div className="mx-auto flex max-w-2xl items-center divide-x divide-[#b9ddec] rounded-lg border border-[#9fd2e6] bg-[#edf8fc] text-sm text-[var(--arena-ink)]">
             <span className="flex items-center gap-2 px-3 py-2">
               <X size={14} aria-hidden="true" />
-              Tracking reviewed MCP servers, source evidence, risk, and confidence
+              Reviewed MCP rankings, source evidence, risk, and confidence
             </span>
             <Link href="/methodology" className="px-3 py-2 font-semibold hover:bg-white">
               Method
@@ -37,14 +37,14 @@ export default async function Home() {
               MCP Rank
             </div>
             <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
-              Rank MCP servers{" "}
+              The trust layer for{" "}
               <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
-                before install
+                MCP servers
               </span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--arena-muted)] sm:text-lg">
-              Compare MCP servers before they touch your tools, repos, databases, workspaces,
-              browsers, or customer systems.
+              Compare reviewed MCP servers by trust score, risk, confidence, and source evidence
+              before they touch your tools, repos, databases, workspaces, or customer systems.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link

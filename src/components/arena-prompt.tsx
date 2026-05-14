@@ -430,16 +430,9 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
   return (
     <form onSubmit={onSubmit} className={compact ? "border-t border-[var(--arena-line)] p-3" : "p-3"}>
       {!compact && (
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3 rounded-lg bg-[color-mix(in_srgb,var(--arena-blue-soft)_65%,white)] px-3 py-3">
-          <div>
-            <div className="text-sm font-semibold text-[var(--arena-ink)]">MCP Evidence Assistant</div>
-            <p className="mt-1 text-xs leading-5 text-[var(--arena-muted)]">
-              Ask for scores, confidence, source evidence, comparisons, and rollout cautions.
-            </p>
-          </div>
-          <span className="rounded-full border border-[#b9ddec] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--arena-muted)]">
-            Reviewed data only
-          </span>
+        <div className="mb-1 flex items-center justify-between gap-3 px-2 pt-1 text-xs text-[var(--arena-muted)]">
+          <span className="font-semibold text-[var(--arena-ink)]">MCP Evidence Assistant</span>
+          <span className="hidden sm:inline">Scores, confidence, evidence, comparisons</span>
         </div>
       )}
       <label className="sr-only" htmlFor="arena-prompt">
@@ -457,7 +450,7 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
         }}
         placeholder={status === "idle" ? "Search MCP Rank evidence, scores, risks, or rollout notes..." : "Working..."}
         maxLength={2000}
-        className={`${compact ? "min-h-16" : "min-h-24"} w-full resize-none bg-transparent px-2 py-2 text-base leading-7 text-[var(--arena-ink)] outline-none placeholder:text-zinc-400`}
+        className={`${compact ? "min-h-16" : "min-h-20"} w-full resize-none bg-transparent px-2 py-2 text-base leading-7 text-[var(--arena-ink)] outline-none placeholder:text-zinc-400`}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap gap-2">

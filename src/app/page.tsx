@@ -54,9 +54,12 @@ export default async function Home() {
             <div className="mt-10 w-full">
               <ArenaPrompt />
             </div>
-            <div className="mt-8 w-full max-w-4xl">
-              <NewsletterSignup context="homepage" />
-            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[var(--arena-line)] bg-[color-mix(in_srgb,var(--arena-bg)_86%,white)] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl">
+            <NewsletterSignup context="homepage" />
           </div>
         </section>
 

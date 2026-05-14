@@ -28,7 +28,7 @@ type ArenaShellProps = {
   mode?: string;
 };
 
-export function ArenaShell({ children, mode = "Trust Index" }: ArenaShellProps) {
+export function ArenaShell({ children }: ArenaShellProps) {
   return (
     <div className="min-h-screen bg-[var(--arena-bg)] text-[var(--arena-ink)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-14 flex-col border-r border-[var(--arena-line)] bg-[var(--arena-bg)] md:flex">
@@ -69,10 +69,6 @@ export function ArenaShell({ children, mode = "Trust Index" }: ArenaShellProps) 
                 <Landmark size={23} strokeWidth={1.7} aria-hidden="true" />
                 <span className="font-serif text-xl font-semibold tracking-tight">MCP Rank</span>
               </Link>
-              <div className="hidden h-8 items-center gap-2 rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 text-sm font-medium text-[var(--arena-ink)] md:flex">
-                <ShieldCheck size={16} aria-hidden="true" />
-                <span>{mode}</span>
-              </div>
             </div>
             <nav className="hidden items-center gap-6 text-sm text-[var(--arena-muted)] lg:flex">
               <Link href="/rankings" className="hover:text-[var(--arena-ink)]">

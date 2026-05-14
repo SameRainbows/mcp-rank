@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, X } from "lucide-react";
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { ArenaPrompt } from "@/components/arena-prompt";
 import { ArenaShell } from "@/components/arena-shell";
+import { HomeEvidenceNotice } from "@/components/home-evidence-notice";
 import { LeaderboardOverview } from "@/components/leaderboard-overview";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { SubmitServerLink } from "@/components/submit-server-link";
@@ -23,25 +24,13 @@ export default async function Home() {
   if (!report || !leader) return null;
 
   return (
-    <ArenaShell mode="Trust Index">
+    <ArenaShell>
       <main>
         <section className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-2xl items-center divide-x divide-[#b9ddec] rounded-lg border border-[#9fd2e6] bg-[#edf8fc] text-sm text-[var(--arena-ink)]">
-            <span className="flex items-center gap-2 px-3 py-2">
-              <X size={14} aria-hidden="true" />
-              Reviewed MCP rankings, source evidence, risk, and confidence
-            </span>
-            <Link href="/methodology" className="px-3 py-2 font-semibold hover:bg-white">
-              Method
-            </Link>
-          </div>
+          <HomeEvidenceNotice />
 
           <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
-            <div className="flex items-center gap-2 font-serif text-2xl font-semibold">
-              <span className="text-3xl leading-none">▥</span>
-              MCP Rank
-            </div>
-            <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
+            <h1 className="max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
               evaluate the{" "}
               <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
                 frontier

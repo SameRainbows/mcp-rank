@@ -57,12 +57,6 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="border-t border-[var(--arena-line)] bg-[color-mix(in_srgb,var(--arena-bg)_86%,white)] px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <NewsletterSignup context="homepage" />
-          </div>
-        </section>
-
         <section className="border-t border-[var(--arena-line)] bg-[color-mix(in_srgb,var(--arena-bg)_82%,white)]">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
             <LeaderboardOverview servers={serverList} />
@@ -122,6 +116,12 @@ export default async function Home() {
                 </div>
               </section>
             </aside>
+          </div>
+        </section>
+
+        <section className="border-t border-[var(--arena-line)] bg-[color-mix(in_srgb,var(--arena-bg)_86%,white)] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl">
+            <NewsletterSignup context="homepage" />
           </div>
         </section>
       </main>

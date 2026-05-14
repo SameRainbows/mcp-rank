@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, CircleAlert } from "lucide-react";
 import { ArenaShell } from "@/components/arena-shell";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 import { ScoreBadge } from "@/components/score-badge";
-import { getServer, getWeeklyReport } from "@/lib/data";
+import { SubmitServerLink } from "@/components/submit-server-link";
+import { getServer, getServers, getWeeklyReport } from "@/lib/data";
+import { isRankable } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 
 export const metadata: Metadata = {
@@ -13,7 +16,11 @@ export const metadata: Metadata = {
 
 export default async function WeeklyBestReportPage() {
   const report = await getWeeklyReport("weekly-best-mcp-service");
-  const winner = report ? await getServer(report.winnerSlug) : undefined;
+  const [winner, servers] = await Promise.all([
+    report ? getServer(report.winnerSlug) : undefined,
+    getServers(),
+  ]);
+  const reviewed = servers.filter(isRankable).sort((a, b) => overallScore(b.score) - overallScore(a.score));
 
   if (!report || !winner) return null;
 
@@ -42,6 +49,25 @@ export default async function WeeklyBestReportPage() {
         </section>
 
         <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
+          <h2 className="font-serif text-2xl font-semibold">Top 3 reviewed servers</h2>
+          <div className="mt-5 divide-y divide-[var(--arena-line)]">
+            {reviewed.slice(0, 3).map((server, index) => (
+              <Link
+                key={server.slug}
+                href={`/servers/${server.slug}`}
+                className="flex items-center justify-between gap-4 py-3 text-sm hover:text-[var(--arena-green)]"
+              >
+                <span>
+                  <span className="font-semibold">{index + 1}. {server.name}</span>
+                  <span className="block text-[var(--arena-muted)]">{server.category} · {server.risk} risk · {server.confidence} confidence</span>
+                </span>
+                <span className="font-mono text-lg font-semibold">{overallScore(server.score)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
           <h2 className="font-serif text-2xl font-semibold">Why it won</h2>
           <div className="mt-5 grid gap-4">
             {report.whyItWon.map((item) => (
@@ -64,6 +90,51 @@ export default async function WeeklyBestReportPage() {
             ))}
           </div>
         </section>
+
+        <section className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+            <h2 className="font-serif text-2xl font-semibold">Biggest risk note</h2>
+            <p className="mt-4 text-sm leading-7 text-[var(--arena-muted)]">{report.biggestRiskNote}</p>
+          </div>
+          <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+            <h2 className="font-serif text-2xl font-semibold">Needs maintainer verification</h2>
+            <div className="mt-4 grid gap-2 text-sm text-[var(--arena-muted)]">
+              {report.needsVerification?.map((item) => <p key={item}>{item}</p>)}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+            <h2 className="font-serif text-2xl font-semibold">Newly indexed</h2>
+            <div className="mt-4 grid gap-2 text-sm text-[var(--arena-muted)]">
+              {report.newlyIndexed?.map((item) => <p key={item}>{item}</p>)}
+            </div>
+          </div>
+          <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+            <h2 className="font-serif text-2xl font-semibold">What changed</h2>
+            <div className="mt-4 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
+              {report.changes?.map((item) => (
+                <div key={item} className="flex gap-3">
+                  <CheckCircle2 className="mt-1 shrink-0 text-[var(--arena-green)]" size={16} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-8">
+          <NewsletterSignup context="weekly-report" />
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <SubmitServerLink className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
+            Submit an MCP server
+          </SubmitServerLink>
+          <Link href="/rankings" className="rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold">
+            View leaderboard
+          </Link>
+        </div>
       </article>
     </ArenaShell>
   );

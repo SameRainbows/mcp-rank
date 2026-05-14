@@ -2,6 +2,16 @@ export type ClientKey = "claude" | "cursor" | "codex" | "vscode";
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type ReviewStatus = "indexed" | "reviewed" | "maintainer_verified" | "deprecated" | "high_risk";
+
+export type ConfidenceLevel = "low" | "medium" | "high";
+
+export type SourceLink = {
+  label: string;
+  type: "repository" | "docs" | "package" | "registry" | "smithery" | "glama" | "website" | "source";
+  url: string;
+};
+
 export type ScoreBreakdown = {
   installDocs: number;
   maintenance: number;
@@ -14,22 +24,33 @@ export type ScoreBreakdown = {
 export type McpServer = {
   slug: string;
   name: string;
+  description: string;
   category: string;
   tagline: string;
   source: string;
+  sourceLinks: SourceLink[];
   packageName: string;
   installCommand: string;
   repositoryUrl: string;
   stars: number;
   lastReviewed: string;
+  evidenceUpdated: string;
+  status: ReviewStatus;
+  confidence: ConfidenceLevel;
+  maintainerVerified: boolean;
+  maintainerVerifiedAt?: string;
   transports: string[];
   clients: ClientKey[];
   risk: RiskLevel;
   score: ScoreBreakdown;
+  trustScore?: number;
   signals: string[];
   evidence: string[];
   cautions: string[];
   examples: string[];
+  useCases?: string[];
+  riskAnalysis?: string[];
+  maintenanceNotes?: string[];
 };
 
 export type WeeklyReport = {
@@ -40,4 +61,8 @@ export type WeeklyReport = {
   summary: string;
   whyItWon: string[];
   watchList: string[];
+  biggestRiskNote?: string;
+  newlyIndexed?: string[];
+  needsVerification?: string[];
+  changes?: string[];
 };

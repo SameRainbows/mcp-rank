@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { servers, weeklyReports } from "./sample-data";
+import { overallScore } from "./scoring";
 import type { McpServer, WeeklyReport } from "./types";
 
 type ServerRow = {
@@ -32,17 +33,25 @@ function getSql() {
 }
 
 function mapServer(row: ServerRow): McpServer {
-  return {
+  const server = {
     slug: row.slug,
     name: row.name,
+    description: row.tagline,
     category: row.category,
     tagline: row.tagline,
     source: row.source,
+    sourceLinks: row.repository_url
+      ? [{ label: "GitHub repo", type: "repository" as const, url: row.repository_url }]
+      : [{ label: "Official MCP registry", type: "registry" as const, url: "https://registry.modelcontextprotocol.io/" }],
     packageName: row.package_name,
     installCommand: row.install_command,
     repositoryUrl: row.repository_url,
     stars: row.stars,
     lastReviewed: row.last_reviewed,
+    evidenceUpdated: row.last_reviewed,
+    status: "reviewed" as const,
+    confidence: "medium" as const,
+    maintainerVerified: false,
     transports: row.transports,
     clients: row.clients as McpServer["clients"],
     risk: row.risk,
@@ -52,6 +61,8 @@ function mapServer(row: ServerRow): McpServer {
     cautions: row.cautions,
     examples: row.examples,
   };
+
+  return { ...server, trustScore: overallScore(server.score) };
 }
 
 export async function getServers(): Promise<McpServer[]> {
@@ -66,7 +77,13 @@ export async function getServers(): Promise<McpServer[]> {
     order by (score->>'usefulness')::int desc, name asc
   `) as ServerRow[];
 
-  return rows.map(mapServer);
+  const merged = new Map(servers.map((server) => [server.slug, server]));
+  for (const row of rows) {
+    const mapped = mapServer(row);
+    merged.set(mapped.slug, { ...(merged.get(mapped.slug) ?? mapped), ...mapped });
+  }
+
+  return [...merged.values()];
 }
 
 export async function getServer(slug: string) {

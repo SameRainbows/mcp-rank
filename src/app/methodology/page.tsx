@@ -46,6 +46,36 @@ export default function MethodologyPage() {
         </section>
 
         <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
+          <h2 className="font-serif text-2xl font-semibold">Status and confidence rules</h2>
+          <div className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)] sm:grid-cols-2">
+            <div>
+              <h3 className="font-semibold text-[var(--arena-ink)]">Indexed is not ranked</h3>
+              <p className="mt-2">
+                Indexed servers may appear in search and server pages, but they are excluded from public leaderboards until reviewed.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-[var(--arena-ink)]">Safest lists require confidence</h3>
+              <p className="mt-2">
+                Top trusted rankings exclude low-confidence tools and high-risk tools, even when the underlying server is useful.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-[var(--arena-ink)]">Maintainer verified is stronger evidence</h3>
+              <p className="mt-2">
+                Maintainer verification means provenance or listing details have been checked more directly, not that the server is formally certified.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-[var(--arena-ink)]">High risk can still be reviewed</h3>
+              <p className="mt-2">
+                Payments, chat, databases, browsers, and file systems can be valuable, but they need prominent cautions and rollout controls.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
           <h2 className="font-serif text-2xl font-semibold">Data sources</h2>
           <ul className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
             {sources.map((source) => (

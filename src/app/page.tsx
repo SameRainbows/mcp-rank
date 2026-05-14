@@ -3,8 +3,10 @@ import { ArrowUpRight, CheckCircle2, X } from "lucide-react";
 import { ArenaPrompt } from "@/components/arena-prompt";
 import { ArenaShell } from "@/components/arena-shell";
 import { LeaderboardOverview } from "@/components/leaderboard-overview";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServer, getServers, getWeeklyReport } from "@/lib/data";
+import { confidenceLabel, isTrustedRankable, reviewStatusLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 
 export default async function Home() {
@@ -13,7 +15,10 @@ export default async function Home() {
     getWeeklyReport("weekly-best-mcp-service"),
   ]);
   const leader = await getServer(report?.winnerSlug ?? serverList[0].slug);
-  const topServers = [...serverList].sort((a, b) => overallScore(b.score) - overallScore(a.score)).slice(0, 3);
+  const topServers = [...serverList]
+    .filter(isTrustedRankable)
+    .sort((a, b) => overallScore(b.score) - overallScore(a.score))
+    .slice(0, 3);
 
   if (!report || !leader) return null;
 
@@ -59,6 +64,9 @@ export default async function Home() {
             </div>
             <div className="mt-10 w-full">
               <ArenaPrompt />
+            </div>
+            <div className="mt-8 w-full max-w-4xl">
+              <NewsletterSignup context="homepage" />
             </div>
           </div>
         </section>
@@ -112,6 +120,9 @@ export default async function Home() {
                     >
                       <span>
                         {index + 1}. {server.name}
+                        <span className="block text-xs font-normal text-[var(--arena-muted)]">
+                          {reviewStatusLabel(server)} · {confidenceLabel(server)} confidence
+                        </span>
                       </span>
                       <span className="font-mono font-semibold">{overallScore(server.score)}</span>
                     </Link>

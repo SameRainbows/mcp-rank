@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArenaPrompt } from "@/components/arena-prompt";
 import { ArenaShell } from "@/components/arena-shell";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 import { SearchWorkbench } from "@/components/search-workbench";
 import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServers } from "@/lib/data";
@@ -38,6 +39,9 @@ export default async function SearchPage() {
         </div>
         <div className="mt-10">
           <SearchWorkbench servers={servers} />
+        </div>
+        <div className="mt-8">
+          <NewsletterSignup context="search" />
         </div>
       </main>
     </ArenaShell>

@@ -5,6 +5,7 @@ import {
   Landmark,
   ListOrdered,
   PanelLeft,
+  Scale,
   Search,
   Send,
   ShieldCheck,
@@ -15,6 +16,7 @@ const navItems = [
   { href: "/", label: "Home", icon: Landmark },
   { href: "/rankings", label: "Leaderboard", icon: ListOrdered },
   { href: "/search", label: "Search", icon: Search },
+  { href: "/compare/github-vs-filesystem", label: "Compare", icon: Scale },
   { href: "/reports/weekly-best-mcp-service", label: "Reports", icon: FileText },
   { href: "/methodology", label: "Methodology", icon: ShieldCheck },
   { href: "/about", label: "About", icon: Info },
@@ -78,6 +80,9 @@ export function ArenaShell({ children, mode = "Trust Index" }: ArenaShellProps) 
               </Link>
               <Link href="/search" className="hover:text-[var(--arena-ink)]">
                 Search
+              </Link>
+              <Link href="/compare/github-vs-filesystem" className="hover:text-[var(--arena-ink)]">
+                Compare
               </Link>
               <Link href="/reports/weekly-best-mcp-service" className="hover:text-[var(--arena-ink)]">
                 Reports

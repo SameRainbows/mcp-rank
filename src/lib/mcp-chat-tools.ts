@@ -1,5 +1,5 @@
 import { getServer, getServers, getWeeklyReport } from "./data";
-import { defaultConfidence, defaultReviewStatus, evidenceUpdatedAt, serverPath } from "./server-derived";
+import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewStatusLabel, serverPath } from "./server-derived";
 import { overallScore, scoreLabels, scoreWeights } from "./scoring";
 import { listTopSafeMcpTools } from "./tool-store";
 import type { ClientKey, McpServer, RiskLevel } from "./types";
@@ -169,8 +169,8 @@ function compactServer(server: McpServer) {
     stars: server.stars,
     lastReviewed: server.lastReviewed,
     evidenceUpdated: evidenceUpdatedAt(server),
-    status: defaultReviewStatus,
-    confidence: defaultConfidence,
+    status: reviewStatusLabel(server),
+    confidence: confidenceLabel(server),
     pagePath: serverPath(server),
     tagline: server.tagline,
     topSignals: server.signals.slice(0, 4),
@@ -200,6 +200,7 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
     const limit = clampLimit(args.limit, 10);
 
     return rankedServers(servers)
+      .filter(isRankable)
       .filter((server) => !category || normalize(server.category).includes(category))
       .filter((server) => !risk || server.risk === risk)
       .filter((server) => !client || server.clients.includes(client))

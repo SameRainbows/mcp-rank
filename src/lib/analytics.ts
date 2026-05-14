@@ -5,7 +5,9 @@ export type AnalyticsEvent =
   | "assistant_query"
   | "submit_server_click"
   | "claim_listing_click"
-  | "badge_copy_click";
+  | "comparison_page_view"
+  | "badge_copy_click"
+  | "newsletter_signup_attempt";
 
 export function trackEvent(event: AnalyticsEvent, properties: Record<string, string | number | boolean> = {}) {
   if (typeof window === "undefined") return;

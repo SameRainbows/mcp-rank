@@ -4,10 +4,11 @@ import { CheckCircle2, CircleAlert, ShieldCheck, Terminal } from "lucide-react";
 import { ArenaShell } from "@/components/arena-shell";
 import { BadgeEmbeds } from "@/components/badge-embeds";
 import { ClaimListingLink } from "@/components/claim-listing-link";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 import { ServerViewTracker } from "@/components/server-view-tracker";
 import { TrackedSourceLink } from "@/components/tracked-source-link";
 import { getServer, getServers } from "@/lib/data";
-import { defaultConfidence, defaultReviewStatus, evidenceUpdatedAt, packageUrlFor } from "@/lib/server-derived";
+import { confidenceLabel, evidenceUpdatedAt, reviewStatusLabel, sourceLinksFor } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
 
 type PageProps = {
@@ -36,6 +37,7 @@ export default async function ServerPage({ params }: PageProps) {
   if (!server) notFound();
 
   const total = overallScore(server.score);
+  const sourceLinks = sourceLinksFor(server);
 
   return (
     <ArenaShell mode="Server Review">
@@ -47,7 +49,7 @@ export default async function ServerPage({ params }: PageProps) {
             <h1 className="mt-3 font-serif text-5xl font-semibold leading-tight">{server.name}</h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">{server.tagline}</p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {[defaultReviewStatus, `${defaultConfidence} confidence`, `${server.risk} risk`].map((label) => (
+              {[reviewStatusLabel(server), `${confidenceLabel(server)} confidence`, `${server.risk} risk`].map((label) => (
                 <span
                   key={label}
                   className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2.5 py-1 text-sm font-semibold capitalize text-[var(--arena-ink)]"
@@ -71,9 +73,9 @@ export default async function ServerPage({ params }: PageProps) {
               <span className="font-mono text-5xl font-semibold">{total}</span>
             </div>
             <div className="mt-5 grid gap-2 text-sm text-[var(--arena-muted)]">
-              <span>Status: {defaultReviewStatus}</span>
-              <span>Confidence: {defaultConfidence}</span>
-              <span>Last reviewed: {server.lastReviewed}</span>
+              <span>Status: {reviewStatusLabel(server)}</span>
+              <span>Confidence: {confidenceLabel(server)}</span>
+              <span>Last reviewed: {server.lastReviewed || "Not manually reviewed yet"}</span>
               <span>Evidence updated: {evidenceUpdatedAt(server)}</span>
               <span>Stars: {server.stars.toLocaleString()}</span>
               <span>Source: {server.source}</span>
@@ -120,6 +122,31 @@ export default async function ServerPage({ params }: PageProps) {
               </div>
             </section>
 
+            {(server.useCases?.length || server.riskAnalysis?.length) && (
+              <section className="grid gap-5 md:grid-cols-2">
+                {Boolean(server.useCases?.length) && (
+                  <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+                    <h2 className="font-serif text-2xl font-semibold">Best-fit use cases</h2>
+                    <div className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
+                      {server.useCases?.map((item) => (
+                        <p key={item}>{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {Boolean(server.riskAnalysis?.length) && (
+                  <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+                    <h2 className="font-serif text-2xl font-semibold">Risk analysis</h2>
+                    <div className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
+                      {server.riskAnalysis?.map((item) => (
+                        <p key={item}>{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
             <section className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
               <h2 className="font-serif text-2xl font-semibold">Use-case examples</h2>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -141,7 +168,7 @@ export default async function ServerPage({ params }: PageProps) {
               <div className="mt-4 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
                 <div className="flex gap-3">
                   <ShieldCheck className="mt-1 shrink-0 text-[var(--arena-green)]" size={17} />
-                  <span>{defaultReviewStatus} with {defaultConfidence.toLowerCase()} confidence.</span>
+                  <span>{reviewStatusLabel(server)} with {confidenceLabel(server).toLowerCase()} confidence.</span>
                 </div>
                 <p>
                   Top safest rankings exclude low-confidence and unreviewed tools. This page is a review signal, not formal certification.
@@ -175,15 +202,21 @@ export default async function ServerPage({ params }: PageProps) {
             <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
               <h2 className="font-serif text-2xl font-semibold">Sources</h2>
               <div className="mt-3 grid gap-3 text-sm">
-                <TrackedSourceLink href={server.repositoryUrl} label="Open source repo" serverSlug={server.slug} sourceType="repository" />
-                {packageUrlFor(server) && (
-                  <TrackedSourceLink href={packageUrlFor(server)} label="Package page" serverSlug={server.slug} sourceType="package" />
-                )}
+                {sourceLinks.map((link) => (
+                  <TrackedSourceLink
+                    key={`${link.type}-${link.url}`}
+                    href={link.url}
+                    label={link.label}
+                    serverSlug={server.slug}
+                    sourceType={link.type}
+                  />
+                ))}
                 <p className="leading-6 text-[var(--arena-muted)]">Source trail: {server.source}</p>
               </div>
             </section>
 
             <BadgeEmbeds serverName={server.name} serverSlug={server.slug} />
+            <NewsletterSignup context={`server-${server.slug}`} compact />
           </aside>
         </section>
       </main>

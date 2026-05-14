@@ -7,14 +7,23 @@ create table if not exists mcp_categories (
 create table if not exists mcp_servers (
   slug text primary key,
   name text not null,
+  description text not null default '',
   category text not null,
   tagline text not null,
   source text not null,
+  source_links jsonb not null default '[]'::jsonb,
   package_name text not null,
   install_command text not null,
   repository_url text not null,
   stars integer not null default 0,
   last_reviewed date not null default current_date,
+  evidence_updated date not null default current_date,
+  status text not null default 'indexed'
+    check (status in ('indexed', 'reviewed', 'maintainer_verified', 'deprecated', 'high_risk')),
+  confidence text not null default 'low'
+    check (confidence in ('low', 'medium', 'high')),
+  maintainer_verified boolean not null default false,
+  maintainer_verified_at timestamptz,
   transports text[] not null default '{}',
   clients text[] not null default '{}',
   risk text not null check (risk in ('low', 'medium', 'high')),

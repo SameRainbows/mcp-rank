@@ -5,6 +5,7 @@ import { LeaderboardOverview } from "@/components/leaderboard-overview";
 import { RankingExplorer } from "@/components/ranking-explorer";
 import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServers } from "@/lib/data";
+import { isRankable } from "@/lib/server-derived";
 
 export const metadata: Metadata = {
   title: "Leaderboard",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 
 export default async function RankingsPage() {
   const servers = await getServers();
+  const reviewedServers = servers.filter(isRankable);
 
   return (
     <ArenaShell mode="Leaderboard">
@@ -33,9 +35,9 @@ export default async function RankingsPage() {
             </Link>
           </div>
         </div>
-        <LeaderboardOverview servers={servers} />
+        <LeaderboardOverview servers={reviewedServers} />
         <div className="mt-8">
-          <RankingExplorer servers={servers} />
+          <RankingExplorer servers={reviewedServers} />
         </div>
       </main>
     </ArenaShell>

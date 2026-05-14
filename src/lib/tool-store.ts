@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { servers } from "./sample-data";
+import { isTrustedRankable } from "./server-derived";
 import type { ConfidenceScore, McpTool, McpToolInput, ToolStatus } from "./tool-types";
 
 type ToolRow = {
@@ -127,7 +128,14 @@ const seedTools: McpTool[] = servers.map((server) =>
     installCommand: server.installCommand,
     stars: server.stars,
     license: "",
-    status: "reviewed",
+    status:
+      server.status === "deprecated"
+        ? "deprecated"
+        : server.status === "indexed"
+          ? "unreviewed"
+          : server.status === "high_risk"
+            ? "blocked"
+            : "reviewed",
     trustScore: Math.round(
       (server.score.installDocs +
         server.score.maintenance +
@@ -137,7 +145,7 @@ const seedTools: McpTool[] = servers.map((server) =>
         server.score.safety) /
         6,
     ),
-    confidenceScore: "medium",
+    confidenceScore: server.status === "indexed" ? "unreviewed" : server.confidence,
     lastReviewedAt: server.lastReviewed,
   }),
 );
@@ -182,6 +190,10 @@ export async function listTopSafeMcpTools(limit = 10) {
           tool.trustScore !== null &&
           (tool.confidenceScore === "medium" || tool.confidenceScore === "high"),
       )
+      .filter((tool) => {
+        const server = servers.find((item) => item.slug === tool.slug);
+        return server ? isTrustedRankable(server) : true;
+      })
       .sort((a, b) => (b.trustScore ?? -1) - (a.trustScore ?? -1))
       .slice(0, limit);
   }

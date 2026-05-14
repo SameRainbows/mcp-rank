@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, CheckCircle2, CircleAlert, Search, SlidersHorizontal } from "lucide-react";
-import { defaultConfidence, defaultReviewStatus } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, reviewStatusLabel } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
 import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
@@ -26,6 +26,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
 
   const ranked = useMemo(() => {
     return servers
+      .filter(isRankable)
       .filter((server) => {
         const haystack = `${server.name} ${server.category} ${server.tagline} ${server.packageName}`.toLowerCase();
         const matchesQuery = haystack.includes(query.toLowerCase());
@@ -44,7 +45,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
         <div>
           <h2 className="font-serif text-3xl font-semibold">MCP Leaderboard</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
-            Ranked by reviewed evidence, install checks, compatibility, usefulness, and safety. Safest lists exclude unreviewed and low-confidence tools.
+            Ranked by reviewed evidence, install checks, compatibility, usefulness, and safety. Indexed-only tools are excluded from public rankings.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -127,8 +128,8 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
                   </td>
                   <td className="px-4 py-4 text-sm text-[var(--arena-muted)]">{server.category}</td>
                   <td className="px-4 py-4 text-sm">
-                    <span className="block font-semibold">{defaultReviewStatus}</span>
-                    <span className="text-xs text-[var(--arena-muted)]">{defaultConfidence} confidence</span>
+                    <span className="block font-semibold">{reviewStatusLabel(server)}</span>
+                    <span className="text-xs text-[var(--arena-muted)]">{confidenceLabel(server)} confidence</span>
                   </td>
                   {Object.keys(scoreLabels).map((key) => (
                     <td key={key} className="px-4 py-4 font-mono text-sm font-semibold">

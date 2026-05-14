@@ -1,10 +1,42 @@
 import type { McpServer } from "./types";
 
-export const defaultReviewStatus = "Reviewed";
-export const defaultConfidence = "Medium";
+export const statusLabels = {
+  indexed: "Indexed",
+  reviewed: "Reviewed",
+  maintainer_verified: "Maintainer Verified",
+  deprecated: "Deprecated",
+  high_risk: "High Risk",
+} as const;
+
+export const confidenceLabels = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+} as const;
 
 export function evidenceUpdatedAt(server: McpServer) {
-  return server.lastReviewed;
+  return server.evidenceUpdated || server.lastReviewed;
+}
+
+export function reviewStatusLabel(server: McpServer) {
+  return statusLabels[server.status] ?? "Indexed";
+}
+
+export function confidenceLabel(server: McpServer) {
+  return confidenceLabels[server.confidence] ?? "Low";
+}
+
+export function isRankable(server: McpServer) {
+  return server.status === "reviewed" || server.status === "maintainer_verified" || server.status === "high_risk";
+}
+
+export function isTrustedRankable(server: McpServer) {
+  return (
+    isRankable(server) &&
+    server.status !== "high_risk" &&
+    server.confidence !== "low" &&
+    server.risk !== "high"
+  );
 }
 
 export function packageUrlFor(server: McpServer) {
@@ -14,6 +46,25 @@ export function packageUrlFor(server: McpServer) {
 
   if (server.packageName.includes("/")) return "";
   return server.packageName ? `https://www.npmjs.com/package/${server.packageName}` : "";
+}
+
+export function sourceLinksFor(server: McpServer) {
+  const links = [...(server.sourceLinks ?? [])];
+  const packageUrl = packageUrlFor(server);
+
+  if (server.repositoryUrl && !links.some((link) => link.url === server.repositoryUrl)) {
+    links.unshift({ label: "GitHub repo", type: "repository", url: server.repositoryUrl });
+  }
+
+  if (packageUrl && !links.some((link) => link.url === packageUrl)) {
+    links.push({ label: "Package page", type: "package", url: packageUrl });
+  }
+
+  if (!links.some((link) => link.url === "https://registry.modelcontextprotocol.io/")) {
+    links.push({ label: "Official MCP registry", type: "registry", url: "https://registry.modelcontextprotocol.io/" });
+  }
+
+  return links.filter((link) => link.url);
 }
 
 export function serverPath(server: McpServer) {

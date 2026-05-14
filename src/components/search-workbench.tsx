@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { confidenceLabel, reviewStatusLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
@@ -83,12 +84,19 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
                 <span className="rounded-md border border-[var(--arena-line)] px-2 py-1 text-xs font-semibold capitalize text-[var(--arena-muted)]">
                   {server.risk} risk
                 </span>
+                <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 py-1 text-xs font-semibold text-[var(--arena-muted)]">
+                  {reviewStatusLabel(server)}
+                </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
-              <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">{server.packageName}</p>
+              <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">
+                {server.packageName || "No package captured yet"} · {confidenceLabel(server)} confidence
+              </p>
             </div>
             <div className="flex items-center gap-3 sm:justify-end">
-              <span className="font-mono text-2xl font-semibold">{overallScore(server.score)}</span>
+              <span className="font-mono text-2xl font-semibold">
+                {server.status === "indexed" ? "Indexed" : overallScore(server.score)}
+              </span>
               <ArrowUpRight size={18} aria-hidden="true" />
             </div>
           </Link>

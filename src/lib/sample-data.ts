@@ -1096,4 +1096,112 @@ export const weeklyReports: WeeklyReport[] = [
       "Separated indexed listings from trusted rankings so unreviewed tools do not inflate leaderboard trust.",
     ],
   },
+  {
+    slug: "safest-mcp-servers-for-codex",
+    title: "Safest MCP Servers for Codex Workflows",
+    weekOf: "2026-05-15",
+    winnerSlug: "github-mcp-server",
+    summary:
+      "For Codex-style coding agents, the strongest reviewed MCP choices are the ones with clear source provenance, practical developer utility, and permission boundaries that can be scoped before rollout.",
+    whyItWon: [
+      "GitHub MCP Server has first-party provenance, direct source/package evidence, and broad value for repository investigation.",
+      "Filesystem, Git, Fetch, and Context7 are useful supporting tools, but each needs explicit scoping rules.",
+      "High-confidence status means the evidence chain is strong; teams still need local policy for write actions and private context.",
+    ],
+    watchList: [
+      "Filesystem should be limited to project directories, never full home folders.",
+      "Git should run in repository-scoped workflows and avoid exposing secrets in history.",
+      "Fetch should treat every retrieved web page as untrusted input.",
+    ],
+    biggestRiskNote:
+      "The main Codex risk is not a single server; it is chaining multiple useful tools into a workflow that can read code, fetch remote content, and mutate repositories without review gates.",
+    newlyIndexed: ["Paper Lantern", "Parallel Search MCP", "PreClick", "OpenArx", "Perplexity API Platform"],
+    needsVerification: ["Git", "Fetch", "Sequential Thinking", "Playwright MCP"],
+    changes: [
+      "Expanded the high-confidence review set to ten servers.",
+      "Kept unreviewed indexed tools out of trusted rankings.",
+      "Added clearer evidence language separating source confidence from operational safety.",
+    ],
+  },
+  {
+    slug: "browser-automation-risk-report",
+    title: "Browser Automation MCP Risk Report",
+    weekOf: "2026-05-15",
+    winnerSlug: "playwright-mcp",
+    summary:
+      "Browser automation MCP servers are valuable for QA and inspection, but they can also interact with authenticated sessions, admin consoles, and production data if deployed without guardrails.",
+    whyItWon: [
+      "Playwright MCP has direct Microsoft repository and package evidence, which improves source confidence.",
+      "Its testing value is high for screenshot checks, accessibility trees, and repeatable UI verification.",
+      "The risk is understandable and controllable when teams use test accounts and deny production admin sessions by default.",
+    ],
+    watchList: [
+      "Puppeteer remains lower confidence because the reviewed path is archived and needs active-maintainer verification.",
+      "Browserbase is useful for cloud browser sessions but requires careful handling of credentials and session storage.",
+      "Remote browsing tools should be assessed for logging, retention, and cross-tenant isolation.",
+    ],
+    biggestRiskNote:
+      "Authenticated browser automation can turn an agent into a human-equivalent operator. Treat it as privileged access, not just a testing helper.",
+    newlyIndexed: ["TinyFish AI Web Agent", "Not Human Search", "Parallel Task MCP"],
+    needsVerification: ["Puppeteer", "Browserbase MCP", "TinyFish AI Web Agent"],
+    changes: [
+      "Raised Playwright MCP to high confidence based on source evidence while keeping medium operational risk.",
+      "Separated browser-session risk from package provenance.",
+      "Kept browser automation outside safest defaults unless confidence and operating controls are clear.",
+    ],
+  },
+  {
+    slug: "auth-oauth-mcp-risk-report",
+    title: "Auth and OAuth Risk in MCP Servers",
+    weekOf: "2026-05-15",
+    winnerSlug: "context7",
+    summary:
+      "MCP servers that require OAuth, API keys, or workspace tokens need a different review lens from low-auth utility servers. The best default choices minimize secret handling and make scopes explicit.",
+    whyItWon: [
+      "Context7 remains a strong low-risk reference point because its default purpose is documentation retrieval.",
+      "GitHub is powerful but requires explicit token scope management before broader team rollout.",
+      "Slack, Stripe, Google Drive, and Notion are useful but should not be marketed as safest without tighter auth evidence.",
+    ],
+    watchList: [
+      "Slack needs workspace-scope and message-retention review before any safety recommendation.",
+      "Stripe needs strict separation between read-only analysis and payment-affecting actions.",
+      "Google Drive and Notion need tenant-level controls for private workspace content.",
+    ],
+    biggestRiskNote:
+      "OAuth success is not the same as safe authorization. MCP Rank needs scope evidence, revocation behavior, and mutation controls before high-risk SaaS tools can be recommended.",
+    newlyIndexed: ["AgentTrust", "LimitGuard Trust Intelligence", "Nordax AI Entity Network"],
+    needsVerification: ["Slack MCP Server", "Stripe MCP Server", "Google Drive", "Notion MCP Server"],
+    changes: [
+      "Clarified that confidence and trust score are separate signals.",
+      "Kept high-risk SaaS tools visible as reviewed but excluded from safest lists.",
+      "Added maintainer-verification asks for tools touching private workspace data.",
+    ],
+  },
+  {
+    slug: "high-confidence-review-batch",
+    title: "First 10 High-Confidence MCP Reviews",
+    weekOf: "2026-05-15",
+    winnerSlug: "github-mcp-server",
+    summary:
+      "The first high-confidence review batch focuses on servers with direct source evidence, repeatable install paths, and clear risk boundaries. High confidence is an evidence label, not a universal safety guarantee.",
+    whyItWon: [
+      "GitHub, Filesystem, and Context7 remain the strongest anchor reviews for developer teams.",
+      "Brave Search, Sequential Thinking, Fetch, Git, Time, Playwright MCP, and Everything now have high-confidence evidence notes.",
+      "Each upgraded review keeps operational cautions visible, especially around local files, browser sessions, and untrusted web content.",
+    ],
+    watchList: [
+      "High-confidence does not automatically mean low-risk.",
+      "Servers with write access, private data access, or authenticated browser sessions still require policy gates.",
+      "Maintainer verification should become a separate stronger signal than source confidence.",
+    ],
+    biggestRiskNote:
+      "The most important editorial rule is restraint: do not call a server safe because it is popular, and do not call it high confidence unless the evidence chain is linkable and reproducible.",
+    newlyIndexed: ["PreClick", "Parallel Search MCP", "Paper Lantern", "OpenArx"],
+    needsVerification: ["GitHub MCP Server", "Filesystem", "Context7", "Playwright MCP"],
+    changes: [
+      "Raised the high-confidence review count from three to ten.",
+      "Expanded evidence notes for every newly high-confidence review.",
+      "Preserved risk warnings so confidence does not read like certification.",
+    ],
+  },
 ];

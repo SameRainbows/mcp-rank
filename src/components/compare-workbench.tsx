@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/analytics";
 import { confidenceLabel, reviewStatusLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 import type { McpServer } from "@/lib/types";
+import { WatchlistButton } from "@/components/watchlist-button";
 
 type CompareWorkbenchProps = {
   servers: McpServer[];
@@ -93,6 +94,20 @@ function ServerSnapshot({ server }: { server: McpServer }) {
       >
         Full review <ArrowUpRight size={15} aria-hidden="true" />
       </Link>
+      <div className="mt-4">
+        <WatchlistButton
+          variant="compact"
+          item={{
+            slug: server.slug,
+            name: server.name,
+            category: server.category,
+            risk: server.risk,
+            confidence: confidenceLabel(server),
+            status: reviewStatusLabel(server),
+            score: scoreText(server),
+          }}
+        />
+      </div>
     </section>
   );
 }

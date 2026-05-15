@@ -7,7 +7,10 @@ export type AnalyticsEvent =
   | "claim_listing_click"
   | "comparison_page_view"
   | "badge_copy_click"
-  | "newsletter_signup_attempt";
+  | "newsletter_signup_attempt"
+  | "watchlist_add"
+  | "watchlist_remove"
+  | "watchlist_view";
 
 export function trackEvent(event: AnalyticsEvent, properties: Record<string, string | number | boolean> = {}) {
   if (typeof window === "undefined") return;

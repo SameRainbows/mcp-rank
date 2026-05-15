@@ -7,6 +7,7 @@ import {
   Search,
   Send,
 } from "lucide-react";
+import { WatchlistNavLink } from "@/components/watchlist-nav-link";
 
 const navItems = [
   { href: "/rankings", label: "Leaderboard", icon: ListOrdered },
@@ -43,6 +44,7 @@ export function ArenaShell({ children }: ArenaShellProps) {
               </Link>
             );
           })}
+          <WatchlistNavLink />
         </nav>
       </aside>
 

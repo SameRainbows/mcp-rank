@@ -7,6 +7,7 @@ import { ClaimListingLink } from "@/components/claim-listing-link";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { ServerViewTracker } from "@/components/server-view-tracker";
 import { TrackedSourceLink } from "@/components/tracked-source-link";
+import { WatchlistButton } from "@/components/watchlist-button";
 import { getServer, getServers } from "@/lib/data";
 import { confidenceLabel, evidenceUpdatedAt, reviewStatusLabel, sourceLinksFor } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
@@ -81,6 +82,17 @@ export default async function ServerPage({ params }: PageProps) {
               <span>Source: {server.source}</span>
               <span className="capitalize">Risk: {server.risk}</span>
             </div>
+            <WatchlistButton
+              item={{
+                slug: server.slug,
+                name: server.name,
+                category: server.category,
+                risk: server.risk,
+                confidence: confidenceLabel(server),
+                status: reviewStatusLabel(server),
+                score: server.status === "indexed" ? "Indexed" : total,
+              }}
+            />
             <ClaimListingLink slug={server.slug} />
           </aside>
         </section>

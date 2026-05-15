@@ -25,7 +25,7 @@ export function ArenaShell({ children }: ArenaShellProps) {
   return (
     <div className="min-h-screen bg-[var(--arena-bg)] text-[var(--arena-ink)]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-14 flex-col border-r border-[var(--arena-line)] bg-[var(--arena-bg)] md:flex">
-        <nav className="flex flex-1 flex-col items-center gap-2 py-4">
+        <nav className="flex flex-1 flex-col items-center justify-center gap-2 pb-8 pt-28">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (

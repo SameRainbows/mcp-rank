@@ -830,9 +830,176 @@ const indexedSeeds: Array<{
   { slug: "not-human-search", name: "Not Human Search", category: "Web retrieval", tagline: "Search the agentic web. 4,100+ sites, 11 tools incl. check_url + verify_mcp for probe-before-use.", sourceUrl: "https://nothumansearch.ai/mcp", source: "Official MCP registry" },
   { slug: "brand-intelligence", name: "Brand Intelligence", category: "Unreviewed", tagline: "Query your Nudg3 brand visibility across ChatGPT, Claude, Gemini, AI Overviews, and Perplexity.", repositoryUrl: "https://github.com/NUDG3-AI/nudg3-mcp", packageName: "nudg3-mcp", installCommand: "uvx nudg3-mcp", risk: "low", source: "Official MCP registry" },
   { slug: "aeo", name: "AEO", category: "Marketing", tagline: "Scan any website for AI readiness — 100-point score across 6 AEO categories in seconds.", sourceUrl: "https://api.obaron.ai/aeo/mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "agentdm", name: "AgentDM", category: "Communication", tagline: "Agent-to-agent messaging platform using MCP for cross-model communication.", sourceUrl: "https://api.agentdm.ai/api/v1/grid", risk: "low", source: "Official MCP registry" },
+  { slug: "auteng-document-publisher", name: "AutEng Document Publisher", category: "Documentation", tagline: "Publish markdown as a publicly shareable AutEng document", sourceUrl: "https://auteng.ai/mcp", repositoryUrl: "https://github.com/auteng/auteng", risk: "medium", source: "Official MCP registry" },
+  { slug: "byteray-mcp", name: "ByteRay MCP", category: "Security", tagline: "AI-powered binary vulnerability hunter lifting binaries to LLM-readable forms for zero-day discovery", sourceUrl: "https://mcp.byteray.ai/mcp", risk: "high", source: "Official MCP registry" },
+  { slug: "xmp4-semantic-code-intelligence", name: "Xmp4 — Semantic Code Intelligence", category: "Developer tools", tagline: "SCIP-backed semantic code intelligence over 800+ pre-indexed OSS libraries. Hosted, free.", sourceUrl: "https://mcp.example4.ai/mcp", repositoryUrl: "https://github.com/0ics-srls/lsai-xmp4.public", risk: "low", source: "Official MCP registry" },
+  { slug: "marketcore-mcp-server", name: "MarketCore MCP Server", category: "Documentation", tagline: "Create on-brand marketing deliverables and GTM docs with AI-powered blueprints and brand guidelines.", sourceUrl: "https://mcp.marketcore.ai/", risk: "low", source: "Official MCP registry" },
+  { slug: "nefesh-real-time-human-state-awareness", name: "Nefesh — Real Time Human State Awareness", category: "Unreviewed", tagline: "Real-time human state fusion: stress score from heart, voice, face signals. GDPR compliant.", sourceUrl: "https://mcp.nefesh.ai/mcp", repositoryUrl: "https://github.com/tomstuhl/nefesh-mcp-server", risk: "low", source: "Official MCP registry" },
+  { slug: "obris", name: "Obris", category: "Documentation", tagline: "Stop re-explaining yourself to AI. Save knowledge once, use it in every conversation.", sourceUrl: "https://mcp.obris.ai/", repositoryUrl: "https://github.com/obris-dev/obris-mcp", packageName: "obris-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "openarx", name: "Openarx", category: "Documentation", tagline: "Open scientific knowledge MCP for AI agents. Three profiles: search, publish, govern.", sourceUrl: "https://mcp.openarx.ai/v1/mcp", repositoryUrl: "https://github.com/OpenArx-AI/openarx-core", risk: "medium", source: "Official MCP registry" },
+  { slug: "openmandate", name: "OpenMandate", category: "Unreviewed", tagline: "MCP server for OpenMandate — open protocol for bilateral matching.", sourceUrl: "https://api.openmandate.ai/mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "scout-by-optimly", name: "Scout By Optimly", category: "Security", tagline: "Query the AI Brand Directory. Audit brand visibility in ChatGPT, Claude, and Gemini.", sourceUrl: "https://scout.optimly.ai/mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "paper-lantern", name: "Paper Lantern", category: "Web retrieval", tagline: "Research intelligence for AI coding agents. 2M+ CS papers with evidence and tradeoffs.", sourceUrl: "https://mcp.paperlantern.ai/chat/mcp", repositoryUrl: "https://github.com/paperlantern-ai/paperlantern-cli", risk: "low", source: "Official MCP registry" },
+  { slug: "parallel-search-mcp", name: "Parallel Search MCP", category: "Web retrieval", tagline: "The best web search for your AI Agent", sourceUrl: "https://search-mcp.parallel.ai/mcp", repositoryUrl: "https://github.com/parallel-web/search-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "parallel-task-mcp", name: "Parallel Task MCP", category: "Web retrieval", tagline: "An MCP server for deep research or task groups", sourceUrl: "https://task-mcp.parallel.ai/mcp", repositoryUrl: "https://github.com/parallel-web/task-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "perplexity-api-platform", name: "Perplexity API Platform", category: "Web retrieval", tagline: "Real-time web search, reasoning, and research through Perplexity's API", packageName: "@perplexity-ai/mcp-server", risk: "low", source: "Official MCP registry" },
+  { slug: "image-processing", name: "Image Processing", category: "Unreviewed", tagline: "Image processing for AI agents. Resize, convert, compress, and pipeline images.", sourceUrl: "https://mcp.pictomancer.ai/mcp", repositoryUrl: "https://gitlab.com/pictomancer.ai/pig-gateway", risk: "low", source: "Official MCP registry" },
+  { slug: "plith", name: "Plith", category: "Security", tagline: "AI agent infrastructure: dedup, cost prediction, validation, governance, failure intelligence.", sourceUrl: "https://plith.ai/api/mcp", repositoryUrl: "https://github.com/chicogonzales/plith", risk: "low", source: "Official MCP registry" },
+  { slug: "server", name: "Server", category: "Unreviewed", tagline: "Family calendar, tasks, meals, lists & rewards hub for AI assistants.", repositoryUrl: "https://github.com/ClaudioGodoyB/ponlo-ai", packageName: "ponlo-ai", risk: "low", source: "Official MCP registry" },
+  { slug: "preclick-an-mcp-native-url-preflight-scanning-service-for-autonomous-agents", name: "PreClick — An MCP Native URL Preflight Scanning Service For Autonomous Agents.", category: "Web retrieval", tagline: "PreClick scans links for threats and confirms intent match with high accuracy before agents click.", sourceUrl: "https://preclick.ai/mcp", repositoryUrl: "https://github.com/cybrlab-ai/preclick-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "primeta", name: "Primeta", category: "Unreviewed", tagline: "Give your AI a face, a voice, and a personality. 3D avatars with custom personas.", sourceUrl: "https://primeta.ai/mcp", repositoryUrl: "https://github.com/Primeta-AI/primeta", risk: "low", source: "Official MCP registry" },
+  { slug: "proofslip", name: "ProofSlip", category: "Security", tagline: "Receipt-based verification for AI agent workflows — create, verify, and poll ephemeral proof objects", sourceUrl: "https://proofslip.ai", repositoryUrl: "https://github.com/Johnny-Z13/proofslip", packageName: "@proofslip/mcp-server", installCommand: "npx", risk: "low", source: "Official MCP registry" },
+  { slug: "pyrimid-protocol", name: "Pyrimid Protocol", category: "Finance", tagline: "Agent-commerce MCP server for x402/USDC payments and affiliate splits on Base.", sourceUrl: "https://pyrimid.ai/api/mcp", repositoryUrl: "https://github.com/pyrimid-ai/pyrimid", risk: "high", source: "Official MCP registry" },
+  { slug: "radiusos-crm", name: "RadiusOS CRM", category: "Finance", tagline: "34-tool CRM server — contacts, pipeline, quotes, invoices, scheduling, email, and AI scoring.", sourceUrl: "https://www.radiusos.ai/api/mcp", repositoryUrl: "https://github.com/chadrnewell-hash/outreachos", risk: "high", source: "Official MCP registry" },
+  { slug: "connect", name: "Connect", category: "Unreviewed", tagline: "AI-native art catalogue. Catalogue works, parse provenance, and generate signed RAIs.", sourceUrl: "https://mcp.raisonn.ai/mcp", repositoryUrl: "https://github.com/raisonnai/raisonnai", risk: "low", source: "Official MCP registry" },
+  { slug: "ra-pay", name: "Ra Pay", category: "Finance", tagline: "Send fiat payments via MCP with two-step confirmation and Stripe Connect.", repositoryUrl: "https://github.com/Ra-Pay-AI/rapay", packageName: "@rapay/mcp-server", risk: "high", source: "Official MCP registry" },
+  { slug: "raven", name: "Raven", category: "Marketing", tagline: "Design intelligence for AI-generated UI — principles, patterns, content, brand, design tokens.", sourceUrl: "https://ravenmcp.ai", repositoryUrl: "https://github.com/rhinocap/raven-mcp", packageName: "raven-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "readypermit-property-zoning-buildability-intelligence", name: "ReadyPermit — Property Zoning & Buildability Intelligence", category: "Marketing", tagline: "Zoning, ADU eligibility, flood zone, setbacks, and buildability intelligence for U.S. parcels.", sourceUrl: "https://rnfonkwthefktfvfwypr.supabase.co/functions/v1/mcp-server", repositoryUrl: "https://github.com/Galax-ai/ReadyPermit.AI-v2", risk: "low", source: "Official MCP registry" },
+  { slug: "buildability-property-zoning-buildability-intelligence", name: "Buildability™ — Property Zoning & Buildability™ Intelligence", category: "Marketing", tagline: "Zoning, ADU eligibility, flood zone, setbacks, and buildability intelligence for U.S. parcels.", sourceUrl: "https://rnfonkwthefktfvfwypr.supabase.co/functions/v1/mcp-server", repositoryUrl: "https://github.com/Galax-ai/ReadyPermit.AI-v2", risk: "low", source: "Official MCP registry" },
+  { slug: "reka", name: "Reka", category: "Web retrieval", tagline: "Understand your videos with Reka AI — search, ask questions, and extract insights.", packageName: "reka-mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "roxels", name: "Roxels", category: "Data", tagline: "Let AI agents create configurable voice agents via meeting rooms and return structured data.", repositoryUrl: "https://github.com/trebu-org/interviewer", packageName: "roxels-mcp", installCommand: "uvx", risk: "medium", source: "Official MCP registry" },
+  { slug: "scamverify-threat-verification", name: "ScamVerify Threat Verification", category: "Security", tagline: "AI-powered scam and threat verification for phone numbers, URLs, texts, and emails.", sourceUrl: "https://scamverify.ai/api/mcp", repositoryUrl: "https://github.com/scamverifyai/scamverify-ai", risk: "high", source: "Official MCP registry" },
+  { slug: "scite", name: "Scite", category: "Security", tagline: "Ground answers in scientific literature. Search full text, evaluate trust, access full-text articles", sourceUrl: "https://api.scite.ai/mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "la-luer-ai-skincare-commerce", name: "La Luer — AI Skincare Commerce", category: "Web retrieval", tagline: "Search, compare, and purchase La Luer microcurrent facial devices and skincare products.", sourceUrl: "https://searchshopai-mcp.fly.dev/mcp/la-luer", repositoryUrl: "https://github.com/nathangrotticelli/searchshopai", risk: "medium", source: "Official MCP registry" },
+  { slug: "seltz-ai-seltz-mcp", name: "Seltz Ai Seltz MCP", category: "Web retrieval", tagline: "Provides AI assistants with access to Seltz's powerful Web Search capabilities.", sourceUrl: "https://mcp.seltz.ai/mcp", risk: "low", source: "Official MCP registry" },
+  { slug: "mcp-merchant", name: "MCP Merchant", category: "Web retrieval", tagline: "Search-only commerce MCP server backed by Stripe (test)", packageName: "mcp-merchant", installCommand: "npx", risk: "medium", source: "Official MCP registry" },
+  { slug: "mcp-registry", name: "MCP Registry", category: "Documentation", tagline: "Search the public MCP Registry; discover servers and copy SSE URLs.", sourceUrl: "https://mcp-registry.shawndurrani.ai/sse", risk: "low", source: "Official MCP registry" },
+  { slug: "simsense", name: "SimSense", category: "Infrastructure", tagline: "Deploy sims to any screen. Control your displays with Claude.", sourceUrl: "https://my.simsense.ai/mcp", risk: "medium", source: "Official MCP registry" },
 ];
 
-const indexedServers = indexedSeeds.map((item) =>
+const lightweightReviewedSlugs = new Set([
+  "docs-mcp",
+  "abmeter",
+  "adeu",
+  "agentdm-agent-to-agent-communication-platform",
+  "agentic-news",
+  "agentic-shelf",
+  "agenttrust-identity-trust-for-a2a-agents",
+  "spotdb",
+  "anki-mcp-server",
+  "ankimcp-server",
+  "anomalyarmor",
+  "artidrop",
+  "contextlayer-mcp",
+  "computeback",
+  "auxen",
+  "baselight",
+  "borealhost",
+  "buywhere-mcp",
+  "buywhere-product-catalog",
+  "byteray-ai",
+  "china-marketing-ai-intelligence-mcp",
+  "cirra-ai-salesforce-admin-mcp-server",
+  "contabo-vps-mcp-server",
+  "hapi-mcp-server",
+  "mcp-registry-server",
+  "exa",
+]);
+
+function packageSource(name: string, installCommand = ""): SourceLink {
+  if (installCommand.startsWith("uvx ")) {
+    return { label: "PyPI package", type: "package", url: "https://pypi.org/project/" + name + "/" };
+  }
+
+  if (name.startsWith("docker.io/")) {
+    const image = name.replace("docker.io/", "").split(":")[0];
+    return { label: "Container image", type: "package", url: "https://hub.docker.com/r/" + image };
+  }
+
+  if (name.startsWith("ghcr.io/")) {
+    return { label: "Container image", type: "package", url: "https://github.com/" + name.replace("ghcr.io/", "").split(":")[0] };
+  }
+
+  return npmPackage(name);
+}
+
+function reviewedScore(base: number, risk: RiskLevel) {
+  return {
+    installDocs: Math.min(100, base + 4),
+    maintenance: base,
+    auth: Math.max(0, risk === "high" ? base - 16 : base - 7),
+    compatibility: Math.min(100, base + 2),
+    usefulness: Math.min(100, base + 5),
+    safety: Math.max(0, risk === "high" ? base - 18 : risk === "medium" ? base - 8 : base - 2),
+  };
+}
+
+const lightweightReviewedServers = indexedSeeds
+  .filter((item) => lightweightReviewedSlugs.has(item.slug))
+  .map((item) => {
+    const risk = item.risk ?? "medium";
+    const base = risk === "high" ? 64 : risk === "medium" ? 71 : item.repositoryUrl ? 77 : 73;
+    const confidence: ConfidenceLevel = item.repositoryUrl || item.packageName ? "medium" : "low";
+
+    return server({
+      slug: item.slug,
+      name: item.name,
+      category: item.category === "Unreviewed" ? "Developer tools" : item.category,
+      tagline: item.tagline,
+      source: (item.source ?? "Official MCP registry") + ", public repository, package, or provider endpoint review",
+      sourceLinks: [
+        ...(item.repositoryUrl ? [repo(item.repositoryUrl)] : []),
+        ...(item.packageName ? [packageSource(item.packageName, item.installCommand)] : []),
+        ...(item.sourceUrl ? [{ label: "Provider MCP endpoint or docs", type: "website" as const, url: item.sourceUrl }] : []),
+        registryLink,
+      ],
+      packageName: item.packageName ?? "",
+      installCommand: item.installCommand ?? "Review provider documentation before install",
+      repositoryUrl: item.repositoryUrl ?? "",
+      stars: 0,
+      lastReviewed: "2026-05-15",
+      evidenceUpdated: "2026-05-15",
+      status: "reviewed",
+      confidence,
+      transports: item.sourceUrl ? ["streamable-http"] : ["stdio"],
+      clients: item.sourceUrl ? ["claude", "cursor", "codex"] : clients,
+      risk,
+      score: reviewedScore(base, risk),
+      signals: [
+        "Official registry listing reviewed",
+        ...(item.repositoryUrl ? ["Repository source link available"] : []),
+        ...(item.packageName ? ["Install package or container identifier available"] : []),
+        ...(item.sourceUrl ? ["Provider endpoint or docs URL available"] : []),
+      ],
+      evidence: [
+        "MCP Rank completed a lightweight source review on 2026-05-15 using official registry metadata and available public source links.",
+        item.repositoryUrl
+          ? "Repository provenance is directly linkable for follow-up maintainer and activity checks."
+          : "No repository URL was available in the indexed metadata, so confidence is capped until maintainer/source provenance is verified.",
+        item.sourceUrl
+          ? "A concrete provider endpoint or docs URL is available for rollout validation."
+          : "No provider endpoint URL was available beyond package or repository metadata.",
+      ],
+      cautions: [
+        "This is a lightweight review, not a full install-and-auth audit.",
+        risk === "high"
+          ? "High-risk category: verify auth scopes, data access, and mutation behavior before production use."
+          : "Verify install behavior and requested permissions in a sandbox before team rollout.",
+        "Maintainer verification is still recommended before treating this as a default-safe tool.",
+      ],
+      examples: [
+        "Evaluate " + item.name + " source links before install.",
+        "Compare " + item.name + " risk and confidence against reviewed alternatives.",
+        "Use " + item.name + " only after validating its install path and permissions.",
+      ],
+      useCases: [
+        "Teams considering " + item.name + " can now see a reviewed, evidence-linked listing instead of an indexed-only row.",
+        "Useful as a candidate for deeper review, maintainer claim, or comparison content.",
+      ],
+      riskAnalysis: [
+        "Current risk level is " + risk + " based on category, source metadata, and exposed capability surface.",
+        "Confidence remains bounded by available public source links until install testing and maintainer verification are complete.",
+      ],
+      maintenanceNotes: [
+        "Next review should check release cadence, package provenance, and whether the listed endpoint still matches registry metadata.",
+      ],
+    });
+  });
+
+const remainingIndexedSeeds = indexedSeeds.filter((item) => !lightweightReviewedSlugs.has(item.slug));
+
+const indexedServers = remainingIndexedSeeds.map((item) =>
   server({
     slug: item.slug,
     name: item.name,
@@ -850,7 +1017,7 @@ const indexedServers = indexedSeeds.map((item) =>
     repositoryUrl: item.repositoryUrl ?? "",
     stars: 0,
     lastReviewed: "",
-    evidenceUpdated: "2026-05-14",
+    evidenceUpdated: "2026-05-15",
     status: "indexed" as ReviewStatus,
     confidence: "low" as ConfidenceLevel,
     transports: item.sourceUrl ? ["streamable-http"] : ["stdio"],
@@ -864,7 +1031,7 @@ const indexedServers = indexedSeeds.map((item) =>
   }),
 );
 
-export const servers: McpServer[] = [...reviewedServers, ...indexedServers];
+export const servers: McpServer[] = [...reviewedServers, ...lightweightReviewedServers, ...indexedServers];
 
 export const weeklyReports: WeeklyReport[] = [
   {
@@ -886,7 +1053,7 @@ export const weeklyReports: WeeklyReport[] = [
     ],
     biggestRiskNote:
       "High-utility servers increasingly touch sensitive systems: payments, chat history, local files, databases, and browser sessions. MCP Rank will not include those servers in safest lists unless confidence is medium/high and the risk surface is explicit.",
-    newlyIndexed: indexedSeeds.slice(0, 8).map((item) => item.name),
+    newlyIndexed: remainingIndexedSeeds.slice(0, 8).map((item) => item.name),
     needsVerification: ["Slack MCP Server", "Stripe MCP Server", "Google Drive", "Redis", "Sentry"],
     changes: [
       "Expanded the indexed dataset beyond 50 public MCP servers.",

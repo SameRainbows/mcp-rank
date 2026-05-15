@@ -31,7 +31,7 @@ export default async function Home() {
 
           <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
             <h1 className="max-w-4xl font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
-              evaluate the{" "}
+              Evaluate the{" "}
               <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
                 frontier
               </span>

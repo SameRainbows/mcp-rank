@@ -16,14 +16,14 @@ export default async function WatchlistPage() {
   return (
     <ArenaShell mode="Watchlist">
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <h1 className="font-serif text-5xl font-semibold leading-tight text-[var(--arena-muted)]">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
             Watch MCP servers before{" "}
             <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
               install
             </span>
           </h1>
-          <p className="mt-5 text-lg leading-8 text-[var(--arena-muted)]">
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">
             A private browser-side list for the MCP services your team is evaluating. Use it to compare
             trust score, confidence, risk, evidence freshness, and rollout cautions before adding a server to your tools.
           </p>

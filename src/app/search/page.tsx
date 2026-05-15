@@ -18,7 +18,7 @@ export default async function SearchPage() {
     <ArenaShell mode="Search">
       <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-serif text-5xl leading-tight text-[var(--arena-muted)]">
+          <h1 className="font-serif text-5xl leading-tight text-[var(--arena-muted)] sm:text-7xl">
             Search the{" "}
             <span className="inline-block bg-[var(--arena-highlight)] px-3 italic text-[var(--arena-ink)] shadow-[8px_8px_0_#dff3fb]">
               evidence

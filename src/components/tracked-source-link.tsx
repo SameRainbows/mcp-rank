@@ -18,10 +18,15 @@ export function TrackedSourceLink({ href, label, serverSlug, sourceType }: Track
       target="_blank"
       rel="noreferrer"
       onClick={() => trackEvent("outbound_source_click", { server: serverSlug, sourceType })}
-      className="inline-flex items-center gap-2 font-semibold"
+      className="group grid gap-1 rounded-md border border-[var(--arena-line)] p-3 transition hover:bg-[var(--arena-blue-soft)]"
     >
-      {label}
-      <ArrowUpRight size={16} aria-hidden="true" />
+      <span className="inline-flex items-center gap-2 font-semibold">
+        {label}
+        <ArrowUpRight size={16} aria-hidden="true" />
+      </span>
+      <span className="break-all font-mono text-xs font-normal leading-5 text-[var(--arena-muted)]">
+        {href}
+      </span>
     </Link>
   );
 }

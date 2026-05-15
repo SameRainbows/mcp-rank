@@ -215,7 +215,7 @@ export default async function ServerPage({ params }: PageProps) {
               </div>
             </section>
 
-            <BadgeEmbeds serverName={server.name} serverSlug={server.slug} />
+            <BadgeEmbeds serverName={server.name} serverSlug={server.slug} maintainerVerified={server.maintainerVerified} />
             <NewsletterSignup context={`server-${server.slug}`} compact />
           </aside>
         </section>

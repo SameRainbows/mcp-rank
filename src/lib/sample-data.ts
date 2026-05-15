@@ -304,6 +304,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Do not send private customer data as search queries.", "Review provider logging and retention terms."],
     examples: ["Find package docs.", "Check a public CVE reference.", "Gather market references."],
+    useCases: [
+      "Best for agents that need public, current web context without local file or workspace access.",
+      "Useful for research assistants that need source discovery before deeper verification.",
+      "Good fallback when a coding agent needs public documentation or changelog references outside the local repository.",
+    ],
+    riskAnalysis: [
+      "Primary risk is query disclosure: private customer names, unreleased product names, or incident details can become search-provider logs.",
+      "The server should be treated as public-web retrieval, not as trusted evidence by itself.",
+      "Lower local risk than filesystem or browser automation because it does not need project files or authenticated browser sessions.",
+    ],
+    maintenanceNotes: [
+      "Recheck package availability and archived reference-server status before recommending broad rollout.",
+      "Review provider API terms, logging, and retention before use in regulated teams.",
+    ],
   }),
   server({
     slug: "memory",
@@ -327,6 +341,20 @@ const reviewedServers: McpServer[] = [
     evidence: ["Persistence can improve continuity.", "Safety depends on what the assistant writes into memory.", "Best used with clear retention and deletion controls."],
     cautions: ["Avoid storing secrets or personal data.", "Give users controls to inspect and delete stored facts."],
     examples: ["Remember repo conventions.", "Track project terminology.", "Store non-sensitive workflow notes."],
+    useCases: [
+      "Best for long-running local assistants that need stable non-sensitive project preferences.",
+      "Useful for preserving repository conventions, terminology, and workflow notes across sessions.",
+      "Poor fit for organizations that cannot give users inspection and deletion controls over stored memory.",
+    ],
+    riskAnalysis: [
+      "Persistent memory can quietly accumulate sensitive context if the assistant writes secrets, customer names, or personal data.",
+      "Risk is medium even with local storage because stale or incorrect facts can influence future agent behavior.",
+      "The strongest mitigation is user-visible memory inspection plus explicit rules for what may never be stored.",
+    ],
+    maintenanceNotes: [
+      "Recheck reference implementation and package path for current maintenance status.",
+      "Future review should verify whether clients expose memory deletion, export, and auditing workflows.",
+    ],
   }),
   server({
     slug: "sequential-thinking",
@@ -355,6 +383,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Do not confuse structured reasoning with factual evidence.", "Still verify final claims against source material."],
     examples: ["Plan a migration.", "Break down debugging steps.", "Explore alternatives before implementation."],
+    useCases: [
+      "Best for planning and decomposition when the user wants explicit intermediate reasoning structure.",
+      "Useful for debugging plans, migration sequencing, incident retrospectives, and tradeoff analysis.",
+      "Not a substitute for retrieval tools because it does not add factual evidence on its own.",
+    ],
+    riskAnalysis: [
+      "Low credential risk because the default surface does not require access to private systems.",
+      "Main risk is false confidence: structured reasoning can make an unsupported answer feel more authoritative.",
+      "Should be paired with source-backed tools when recommendations depend on current facts.",
+    ],
+    maintenanceNotes: [
+      "Keep review focused on protocol compatibility and whether the package remains actively maintained.",
+      "Revalidate examples when MCP clients change how tool outputs are displayed to users.",
+    ],
   }),
   server({
     slug: "fetch",
@@ -383,6 +425,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Do not fetch sensitive internal URLs unless explicitly allowed.", "Treat fetched web content as untrusted input."],
     examples: ["Read public docs.", "Summarize a public changelog.", "Collect evidence links."],
+    useCases: [
+      "Best for source-grounded answers that need public documentation, changelogs, or release notes.",
+      "Useful for review workflows where the assistant must cite exact public pages before making recommendations.",
+      "A good companion to search tools: search finds candidates, Fetch retrieves the specific source text.",
+    ],
+    riskAnalysis: [
+      "Fetched content is untrusted input and can contain prompt-injection instructions aimed at the agent.",
+      "Internal URL fetching can expose private services if network policy is loose.",
+      "Default public-fetch usage is lower risk than local file or browser automation access.",
+    ],
+    maintenanceNotes: [
+      "Recheck package provenance and install command whenever the reference server changes distribution path.",
+      "Future review should test client handling of malicious fetched-page instructions.",
+    ],
   }),
   server({
     slug: "git",
@@ -411,6 +467,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Avoid exposing repositories containing secrets.", "Use read-only workflows unless mutation is explicitly needed."],
     examples: ["Inspect recent commits.", "Summarize a diff.", "Find who changed a file."],
+    useCases: [
+      "Best for local repository inspection, commit history review, and diff explanation.",
+      "Useful for coding agents that need Git context without broad GitHub or GitLab API credentials.",
+      "Good for offline or self-hosted workflows where source control metadata is already local.",
+    ],
+    riskAnalysis: [
+      "Repository history can contain secrets even if the current working tree looks clean.",
+      "Write-capable Git workflows can change branches, commits, or tags if exposed without approval.",
+      "Risk increases when paired with filesystem access because the agent can combine history and file content.",
+    ],
+    maintenanceNotes: [
+      "Recheck package status and reference-server path as official MCP servers evolve.",
+      "Future review should distinguish read-only Git inspection from mutation-capable Git operations.",
+    ],
   }),
   server({
     slug: "time",
@@ -439,6 +509,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Verify timezone assumptions in user-facing workflows."],
     examples: ["Convert meeting times.", "Calculate deadlines.", "Normalize timestamps."],
+    useCases: [
+      "Best for scheduling, deadline normalization, and timezone conversion in low-risk assistant workflows.",
+      "Useful as a first MCP smoke test because capability scope is tiny and easy to reason about.",
+      "Good companion for calendar or project-management tools that need explicit time calculations.",
+    ],
+    riskAnalysis: [
+      "Operational risk is low because the tool does not need private data, credentials, or external account access.",
+      "The main failure mode is incorrect timezone interpretation rather than data exposure.",
+      "User-facing scheduling should still confirm locale, daylight-saving behavior, and intended timezone.",
+    ],
+    maintenanceNotes: [
+      "Recheck package path and reference-server status before including in onboarding guides.",
+      "Keep examples focused on deterministic time conversion rather than business policy decisions.",
+    ],
   }),
   server({
     slug: "notion-mcp",
@@ -508,6 +592,20 @@ const reviewedServers: McpServer[] = [
     evidence: ["Useful for local analytics and prototyping.", "Risk depends on database contents and file scope."],
     cautions: ["Avoid databases containing secrets or regulated customer data.", "Prefer copies over live production data."],
     examples: ["Inspect local app data.", "Draft SQL queries.", "Analyze test fixtures."],
+    useCases: [
+      "Best for local prototypes, test fixtures, and small application databases where the database file can be copied before review.",
+      "Useful for agents that need to explain schema shape or draft read-only SQL over a bounded local file.",
+      "Not a good default for regulated production data unless the database is scrubbed or isolated.",
+    ],
+    riskAnalysis: [
+      "SQLite files can contain customer data, credentials, local app state, or imported production extracts.",
+      "The archived reference path lowers maintenance confidence even when the local capability is simple.",
+      "Risk is manageable when teams point the server at disposable copies instead of live operational files.",
+    ],
+    maintenanceNotes: [
+      "Recheck whether a maintained successor exists before recommending new production adoption.",
+      "Future review should verify read-only configuration options and package maintenance status.",
+    ],
   }),
   server({
     slug: "redis",
@@ -628,6 +726,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Use dedicated test accounts.", "Avoid production admin sessions unless explicitly approved."],
     examples: ["Run a smoke test.", "Inspect accessibility tree.", "Capture a visual regression."],
+    useCases: [
+      "Best for UI smoke tests, accessibility inspection, screenshot capture, and regression checks in controlled environments.",
+      "Useful for product teams that want agent-assisted QA without giving the agent backend credentials.",
+      "Strong fit for preview deployments and staging apps when paired with disposable test accounts.",
+    ],
+    riskAnalysis: [
+      "Browser automation can operate inside authenticated sessions, so it must be treated as privileged user access.",
+      "Screenshots, traces, and DOM snapshots can capture secrets or customer data if run against production.",
+      "Risk is acceptable for test accounts and staging surfaces, but high for unattended production admin sessions.",
+    ],
+    maintenanceNotes: [
+      "Microsoft-owned repository and package should be rechecked for release cadence and tool-surface changes.",
+      "Future review should test how clients expose browser session artifacts, screenshots, and trace retention.",
+    ],
   }),
   server({
     slug: "puppeteer",
@@ -725,6 +837,20 @@ const reviewedServers: McpServer[] = [
     ],
     cautions: ["Do not rank as a business-useful server despite low risk.", "Use for test harnesses and client validation."],
     examples: ["Validate MCP client setup.", "Exercise prompts/resources/tools.", "Debug protocol behavior."],
+    useCases: [
+      "Best for MCP client implementers who need to exercise prompts, tools, and resources in a known test server.",
+      "Useful for smoke-testing client compatibility before connecting higher-risk production tools.",
+      "Not intended for end-user business workflows despite its low operational risk.",
+    ],
+    riskAnalysis: [
+      "The risk surface is low because the server is primarily a reference and protocol exercise target.",
+      "The bigger product risk is misclassification: it should not outrank useful production servers on utility.",
+      "Safe testing still depends on running it in a sandboxed environment rather than mixing it with sensitive client sessions.",
+    ],
+    maintenanceNotes: [
+      "Keep review tied to MCP protocol compatibility and reference-server maintenance.",
+      "Future review should track whether client vendors still use it for compatibility smoke tests.",
+    ],
   }),
 ];
 

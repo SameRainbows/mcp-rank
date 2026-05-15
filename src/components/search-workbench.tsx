@@ -16,19 +16,24 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   const [query, setQuery] = useState("");
   const [client, setClient] = useState<ClientKey | "all">("all");
   const [risk, setRisk] = useState<RiskLevel | "all">("all");
+  const [sourceEvidence, setSourceEvidence] = useState<"all" | "ready" | "needs">("all");
 
   const results = useMemo(() => {
     return servers
       .filter((server) => {
         const text = `${server.name} ${server.category} ${server.tagline} ${server.signals.join(" ")}`.toLowerCase();
+        const needsSourceEvidence = server.status === "indexed" && !server.packageName;
         return (
           text.includes(query.toLowerCase()) &&
           (client === "all" || server.clients.includes(client)) &&
-          (risk === "all" || server.risk === risk)
+          (risk === "all" || server.risk === risk) &&
+          (sourceEvidence === "all" ||
+            (sourceEvidence === "ready" && !needsSourceEvidence) ||
+            (sourceEvidence === "needs" && needsSourceEvidence))
         );
       })
       .sort((a, b) => overallScore(b.score) - overallScore(a.score));
-  }, [client, query, risk, servers]);
+  }, [client, query, risk, servers, sourceEvidence]);
 
   return (
     <section className="rounded-xl border border-[var(--arena-line)] bg-white shadow-[0_10px_35px_rgba(33,29,24,0.05)]">
@@ -68,6 +73,15 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
             <option value="medium">Medium risk</option>
             <option value="high">High risk</option>
           </select>
+          <select
+            value={sourceEvidence}
+            onChange={(event) => setSourceEvidence(event.target.value as "all" | "ready" | "needs")}
+            className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-medium"
+          >
+            <option value="all">All source evidence</option>
+            <option value="ready">Has package/source evidence</option>
+            <option value="needs">Needs source evidence</option>
+          </select>
         </div>
       </div>
 
@@ -90,7 +104,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
               </div>
               <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
               <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">
-                {server.packageName || "No package captured yet"} · {confidenceLabel(server)} confidence
+                {server.packageName || (server.status === "indexed" ? "Needs source evidence" : "Package pending")} · {confidenceLabel(server)} confidence
               </p>
             </div>
             <div className="flex items-center gap-3 sm:justify-end">

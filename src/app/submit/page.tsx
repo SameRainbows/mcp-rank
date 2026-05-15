@@ -16,6 +16,9 @@ export default async function SubmitPage({ searchParams }: PageProps) {
   const body = claim
     ? `Listing to claim: ${claim}%0AName:%0ARole/project:%0AEvidence or maintainer links:%0A`
     : "Server name:%0ARepository or package URL:%0AMaintainer email:%0AInstall command:%0AWhy it should be reviewed:%0A";
+  const outreachSubject = "MCP Rank listing verification";
+  const outreachBody =
+    "Hi,%0A%0AWe indexed your MCP server on MCP Rank, an independent trust and ranking dataset for MCP tools.%0A%0AWe are asking maintainers to verify source links, install commands, supported clients, auth scopes, and safety cautions before we mark a listing as maintainer verified.%0A%0AServer/listing:%0ARepository or package URL:%0ABest maintainer contact:%0AAnything MCP Rank should correct:%0A%0AThanks.";
 
   return (
     <ArenaShell mode="Submit">
@@ -70,6 +73,29 @@ export default async function SubmitPage({ searchParams }: PageProps) {
               <li>Evidence for maintenance, examples, and real-world usefulness.</li>
             </ul>
           </aside>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
+          <p className="text-sm font-semibold text-[var(--arena-green)]">Maintainer outreach</p>
+          <h2 className="mt-2 font-serif text-2xl font-semibold">Verify a listing before it becomes a badge.</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
+            MCP Rank Verified is reserved for maintainers who confirm the listing, source URLs, install path,
+            supported clients, auth model, and safety cautions. Everyone else gets Listed or Reviewed status,
+            not a verification badge.
+          </p>
+          <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] p-4 font-mono text-xs leading-6 text-[var(--arena-muted)]">
+              <p>Subject: MCP Rank listing verification</p>
+              <p>Ask: confirm source URLs, install command, supported clients, auth scopes, and safety cautions.</p>
+              <p>Outcome: Reviewed by MCP Rank now; MCP Rank Verified only after maintainer evidence review.</p>
+            </div>
+            <a
+              href={`mailto:reviews@mcprank.dev?subject=${encodeURIComponent(outreachSubject)}&body=${outreachBody}`}
+              className="inline-flex rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold transition hover:bg-[var(--arena-blue-soft)]"
+            >
+              Open outreach email
+            </a>
+          </div>
         </section>
       </main>
     </ArenaShell>

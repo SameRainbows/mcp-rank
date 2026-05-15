@@ -218,7 +218,20 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
   const sql = getSql();
 
   if (!sql) {
-    for (const tool of tools) memoryTools.set(tool.slug, tool);
+    for (const tool of tools) {
+      const existing = memoryTools.get(tool.slug);
+      if (existing?.status === "reviewed" && tool.status === "unreviewed") {
+        memoryTools.set(tool.slug, {
+          ...tool,
+          status: existing.status,
+          trustScore: existing.trustScore,
+          confidenceScore: existing.confidenceScore,
+          lastReviewedAt: existing.lastReviewedAt,
+        });
+      } else {
+        memoryTools.set(tool.slug, tool);
+      }
+    }
     return { persisted: false, count: tools.length, tools };
   }
 
@@ -247,12 +260,24 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
         stars = excluded.stars,
         last_commit = excluded.last_commit,
         license = excluded.license,
-        status = excluded.status,
-        trust_score = excluded.trust_score,
-        confidence_score = excluded.confidence_score,
+        status = case
+          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.status
+          else excluded.status
+        end,
+        trust_score = case
+          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.trust_score
+          else excluded.trust_score
+        end,
+        confidence_score = case
+          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.confidence_score
+          else excluded.confidence_score
+        end,
         open_issues = excluded.open_issues,
         readme_length = excluded.readme_length,
-        last_reviewed_at = excluded.last_reviewed_at,
+        last_reviewed_at = case
+          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.last_reviewed_at
+          else excluded.last_reviewed_at
+        end,
         enrichment = excluded.enrichment,
         updated_at = now()
     `;

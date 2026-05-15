@@ -18,7 +18,9 @@ type PageProps = {
 
 export async function generateStaticParams() {
   const servers = await getServers();
-  return servers.map((server) => ({ slug: server.slug }));
+  return servers
+    .filter((server) => server.status !== "indexed")
+    .map((server) => ({ slug: server.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -39,6 +41,94 @@ export default async function ServerPage({ params }: PageProps) {
 
   const total = overallScore(server.score);
   const sourceLinks = sourceLinksFor(server);
+
+  if (server.status === "indexed") {
+    return (
+      <ArenaShell mode="Indexed Server">
+        <ServerViewTracker slug={server.slug} />
+        <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <section className="grid gap-8 lg:grid-cols-[1fr_340px]">
+            <div>
+              <p className="text-sm font-semibold text-[var(--arena-green)]">{server.category}</p>
+              <h1 className="mt-3 font-serif text-5xl font-semibold leading-tight">{server.name}</h1>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">{server.tagline}</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2.5 py-1 text-sm font-semibold text-[var(--arena-ink)]">
+                  Indexed
+                </span>
+                <span className="rounded-md border border-[var(--arena-line)] bg-white px-2.5 py-1 text-sm font-medium text-[var(--arena-muted)]">
+                  Low confidence
+                </span>
+                <span className="rounded-md border border-[var(--arena-line)] bg-white px-2.5 py-1 text-sm font-medium text-[var(--arena-muted)]">
+                  Not ranked
+                </span>
+              </div>
+            </div>
+            <aside className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
+              <h2 className="font-serif text-2xl font-semibold">Not yet reviewed</h2>
+              <div className="mt-4 grid gap-2 text-sm leading-6 text-[var(--arena-muted)]">
+                <span>Source provider: {server.sourceProvider || server.source}</span>
+                <span>Source kind: {server.sourceKind || "Public source"}</span>
+                <span>Imported: {server.importedAt || "Pending import timestamp"}</span>
+                <span>Last seen: {evidenceUpdatedAt(server) || "Pending source refresh"}</span>
+              </div>
+              <WatchlistButton
+                item={{
+                  slug: server.slug,
+                  name: server.name,
+                  category: server.category,
+                  risk: server.risk,
+                  confidence: confidenceLabel(server),
+                  status: reviewStatusLabel(server),
+                  score: "Indexed",
+                }}
+              />
+              <ClaimListingLink slug={server.slug} />
+            </aside>
+          </section>
+
+          <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+              <h2 className="font-serif text-2xl font-semibold">Indexed from public source</h2>
+              <div className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)]">
+                <div className="flex gap-3">
+                  <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />
+                  <span>This tool is discoverable in MCP Rank, but it has not received an MCP Rank trust review.</span>
+                </div>
+                <div className="flex gap-3">
+                  <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />
+                  <span>It is excluded from public leaderboards, safest lists, and trusted recommendations.</span>
+                </div>
+                <div className="flex gap-3">
+                  <CheckCircle2 className="mt-1 shrink-0 text-[var(--arena-green)]" size={17} />
+                  <span>Submit maintainer evidence, install docs, package links, auth details, or risk notes to help review this listing.</span>
+                </div>
+              </div>
+            </div>
+
+            <aside className="grid content-start gap-5">
+              <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
+                <h2 className="font-serif text-2xl font-semibold">Sources</h2>
+                <div className="mt-3 grid gap-3 text-sm">
+                  {sourceLinks.map((link) => (
+                    <TrackedSourceLink
+                      key={`${link.type}-${link.url}`}
+                      href={link.url}
+                      label={link.label}
+                      serverSlug={server.slug}
+                      sourceType={link.type}
+                    />
+                  ))}
+                  <p className="leading-6 text-[var(--arena-muted)]">Source trail: {server.source}</p>
+                </div>
+              </section>
+              <NewsletterSignup context={`indexed-server-${server.slug}`} compact />
+            </aside>
+          </section>
+        </main>
+      </ArenaShell>
+    );
+  }
 
   return (
     <ArenaShell mode="Server Review">
@@ -90,7 +180,7 @@ export default async function ServerPage({ params }: PageProps) {
                 risk: server.risk,
                 confidence: confidenceLabel(server),
                 status: reviewStatusLabel(server),
-                score: server.status === "indexed" ? "Indexed" : total,
+                score: total,
               }}
             />
             <ClaimListingLink slug={server.slug} />

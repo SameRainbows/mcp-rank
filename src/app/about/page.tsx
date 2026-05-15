@@ -35,6 +35,10 @@ export default function AboutPage() {
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
             MCP Rank is independent and not affiliated with Anthropic, OpenAI, GitHub, or the official MCP project. Scores are editorial review signals, not certifications or legal/security advice.
           </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search, and maintainer submissions.
+            Rankings and trust labels are assigned only after MCP Rank review, so imported directory data is attribution, not original review work.
+          </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/methodology" className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
               Read methodology

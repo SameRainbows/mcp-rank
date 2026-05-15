@@ -2,6 +2,10 @@ export type ConfidenceScore = "unreviewed" | "low" | "medium" | "high";
 
 export type ToolStatus = "unreviewed" | "reviewed" | "deprecated" | "blocked";
 
+export type ImportSourceKind = "official" | "community" | "package_registry" | "directory" | "manual";
+
+export type ImportSourceProvider = "official_registry" | "smithery" | "glama" | "github_search" | "manual_csv";
+
 export type McpTool = {
   name: string;
   slug: string;
@@ -35,4 +39,40 @@ export type McpToolInput = Partial<McpTool> & {
   last_reviewed_at?: string | null;
   open_issues?: number | string | null;
   readme_length?: number | string | null;
+};
+
+export type ImportedMcpToolRecord = {
+  name: string;
+  description?: string;
+  category?: string;
+  sourceProvider: ImportSourceProvider;
+  sourceKind: ImportSourceKind;
+  sourceUrl: string;
+  externalId?: string;
+  githubUrl?: string;
+  packageName?: string;
+  packageUrl?: string;
+  homepageUrl?: string;
+  installCommand?: string;
+  rawMetadata?: Record<string, unknown>;
+};
+
+export type ImportPreviewRow = {
+  record: ImportedMcpToolRecord;
+  slug: string;
+  action: "create" | "update_duplicate" | "skip_invalid";
+  duplicateSlug?: string;
+  reason?: string;
+};
+
+export type ImportResultSummary = {
+  dryRun: boolean;
+  provider: ImportSourceProvider;
+  fetched: number;
+  newTools: number;
+  duplicates: number;
+  updatedSourceLinks: number;
+  skippedInvalid: number;
+  errors: string[];
+  preview: ImportPreviewRow[];
 };

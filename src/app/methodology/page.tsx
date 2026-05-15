@@ -77,6 +77,10 @@ export default function MethodologyPage() {
 
         <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
           <h2 className="font-serif text-2xl font-semibold">Data sources</h2>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search,
+            and maintainer submissions. Rankings and trust labels are assigned only after MCP Rank review.
+          </p>
           <ul className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
             {sources.map((source) => (
               <li key={source} className="border-l-2 border-[var(--arena-green)] pl-3">

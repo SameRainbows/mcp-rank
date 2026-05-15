@@ -44,6 +44,9 @@ export type McpServer = {
   risk: RiskLevel;
   score: ScoreBreakdown;
   trustScore?: number;
+  importedAt?: string;
+  sourceProvider?: string;
+  sourceKind?: string;
   signals: string[];
   evidence: string[];
   cautions: string[];

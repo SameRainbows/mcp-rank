@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Database, FileUp, RefreshCw, Save, ShieldCheck } from "lucide-react";
-import type { ConfidenceScore, McpTool, McpToolInput, ToolStatus } from "@/lib/tool-types";
+import type { ConfidenceScore, ImportResultSummary, ImportSourceProvider, McpTool, McpToolInput, ToolStatus } from "@/lib/tool-types";
 
 const csvColumns = [
   "name",
@@ -24,49 +24,6 @@ const csvColumns = [
   "last_reviewed_at",
 ];
 
-function parseCsvLine(line: string) {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const next = line[index + 1];
-
-    if (char === '"' && next === '"') {
-      current += '"';
-      index += 1;
-    } else if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      cells.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  cells.push(current.trim());
-  return cells;
-}
-
-function parseCsv(text: string): McpToolInput[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length < 2) return [];
-
-  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
-  return lines.slice(1).map((line) => {
-    const cells = parseCsvLine(line);
-    return headers.reduce<Record<string, string>>((row, header, index) => {
-      row[header] = cells[index] ?? "";
-      return row;
-    }, {});
-  });
-}
-
 type StatusFilter = "all" | "reviewed" | "unreviewed";
 
 type AdminToolsProps = {
@@ -83,6 +40,11 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
   );
   const [loading, setLoading] = useState(false);
   const [adminToken, setAdminToken] = useState(initialAdminToken);
+  const [importProvider, setImportProvider] = useState<ImportSourceProvider>("official_registry");
+  const [importLimit, setImportLimit] = useState(100);
+  const [importQuery, setImportQuery] = useState("");
+  const [importCsv, setImportCsv] = useState("");
+  const [importPreview, setImportPreview] = useState<ImportResultSummary | null>(null);
 
   function adminHeaders() {
     return {
@@ -102,22 +64,44 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
 
   const reviewedCount = useMemo(() => tools.filter((tool) => tool.status === "reviewed").length, [tools]);
   const unreviewedCount = useMemo(() => tools.filter((tool) => tool.status === "unreviewed").length, [tools]);
+  const reviewQueue = useMemo(() => {
+    function sourceQuality(tool: McpTool) {
+      const source = `${tool.source} ${tool.sourceUrl}`.toLowerCase();
+      if (source.includes("official")) return 0;
+      if (tool.githubUrl && tool.packageUrl) return 1;
+      if (tool.githubUrl || tool.packageUrl) return 2;
+      return 3;
+    }
+
+    function riskWeight(tool: McpTool) {
+      const category = tool.category.toLowerCase();
+      if (/security|finance|marketing|communication|data/.test(category)) return 0;
+      if (/developer|documentation|web/.test(category)) return 1;
+      return 2;
+    }
+
+    return tools
+      .filter((tool) => tool.status === "unreviewed")
+      .sort((a, b) => sourceQuality(a) - sourceQuality(b) || riskWeight(a) - riskWeight(b) || a.name.localeCompare(b.name))
+      .slice(0, 12);
+  }, [tools]);
 
   async function handleCsvUpload(file: File) {
     const text = await file.text();
-    const rows = parseCsv(text);
-    const response = await fetch("/api/admin/tools", {
+    const response = await fetch("/api/admin/import", {
       method: "POST",
       headers: adminHeaders(),
-      body: JSON.stringify({ tools: rows }),
+      body: JSON.stringify({ provider: "manual_csv", csvText: text, limit: 1000, dryRun: true }),
     });
-    const data = (await response.json()) as { count?: number; persisted?: boolean; error?: string };
+    const data = (await response.json()) as ImportResultSummary & { error?: string };
     if (!response.ok) {
-      setMessage(data.error ?? "Could not import CSV.");
+      setMessage(data.error ?? "Could not preview CSV import.");
       return;
     }
-    setMessage(`Imported ${data.count} rows. ${data.persisted ? "Saved to database." : "Saved to local fallback."}`);
-    await loadTools(filter);
+    setImportProvider("manual_csv");
+    setImportCsv(text);
+    setImportPreview(data);
+    setMessage(`CSV preview ready: ${data.newTools} new, ${data.duplicates} duplicates, ${data.skippedInvalid} skipped.`);
   }
 
   async function patchTool(slug: string, patch: McpToolInput) {
@@ -149,6 +133,33 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
     }
     setTools((current) => current.map((tool) => (tool.slug === slug ? data.tool! : tool)));
     setMessage(`Enriched ${data.tool.name}.`);
+  }
+
+  async function runImport(dryRun: boolean) {
+    setLoading(true);
+    setMessage(dryRun ? "Running import preview..." : "Importing indexed tools...");
+    const response = await fetch("/api/admin/import", {
+      method: "POST",
+      headers: adminHeaders(),
+      body: JSON.stringify({
+        provider: importProvider,
+        limit: importLimit,
+        query: importQuery,
+        csvText: importCsv,
+        dryRun,
+      }),
+    });
+    const data = (await response.json()) as ImportResultSummary & { error?: string };
+    setLoading(false);
+    if (!response.ok) {
+      setMessage(data.error ?? "Import failed.");
+      return;
+    }
+    setImportPreview(data);
+    setMessage(
+      `${dryRun ? "Previewed" : "Imported"} ${data.fetched} records: ${data.newTools} new, ${data.duplicates} duplicates, ${data.skippedInvalid} skipped.`,
+    );
+    if (!dryRun) await loadTools(filter);
   }
 
   return (
@@ -204,6 +215,122 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
         />
       </section>
 
+      <section className="grid gap-4 rounded-lg border border-[var(--arena-line)] bg-white p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+          <div>
+            <div className="text-sm font-semibold text-[var(--arena-blue)]">Aggregation importer</div>
+            <h2 className="mt-2 font-serif text-3xl font-semibold">Import public MCP sources safely</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
+              Imports default to indexed, low-confidence, unreviewed records. Duplicates only refresh source metadata and never overwrite manual review fields.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-start gap-2">
+            <button
+              type="button"
+              onClick={() => void runImport(true)}
+              className="rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold hover:bg-[var(--arena-blue-soft)]"
+            >
+              Dry-run preview
+            </button>
+            <button
+              type="button"
+              onClick={() => void runImport(false)}
+              className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Commit import
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <label className="grid gap-1 text-sm font-semibold">
+            Source
+            <select
+              value={importProvider}
+              onChange={(event) => setImportProvider(event.target.value as ImportSourceProvider)}
+              className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+            >
+              <option value="official_registry">Official MCP Registry</option>
+              <option value="smithery">Smithery API</option>
+              <option value="glama">Glama API</option>
+              <option value="github_search">GitHub search</option>
+              <option value="manual_csv">Manual CSV paste</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-semibold">
+            Limit
+            <input
+              type="number"
+              min="1"
+              max="1000"
+              value={importLimit}
+              onChange={(event) => setImportLimit(Number(event.target.value))}
+              className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+            Query
+            <input
+              value={importQuery}
+              onChange={(event) => setImportQuery(event.target.value)}
+              placeholder="Optional source-specific query"
+              className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+            />
+          </label>
+        </div>
+
+        {importProvider === "manual_csv" && (
+          <textarea
+            value={importCsv}
+            onChange={(event) => setImportCsv(event.target.value)}
+            rows={5}
+            placeholder="name,description,category,source_url,github_url,package_url,install_command,external_id,source_kind"
+            className="w-full rounded-md border border-[var(--arena-line)] bg-white p-3 font-mono text-xs"
+          />
+        )}
+
+        {importPreview && (
+          <div className="rounded-lg border border-[#b9ddec] bg-[#edf8fc] p-4">
+            <div className="grid gap-3 text-sm sm:grid-cols-5">
+              <div><span className="block font-mono text-2xl">{importPreview.newTools}</span>New</div>
+              <div><span className="block font-mono text-2xl">{importPreview.duplicates}</span>Duplicates</div>
+              <div><span className="block font-mono text-2xl">{importPreview.updatedSourceLinks}</span>Source updates</div>
+              <div><span className="block font-mono text-2xl">{importPreview.skippedInvalid}</span>Skipped</div>
+              <div><span className="block font-mono text-2xl">{importPreview.errors.length}</span>Errors</div>
+            </div>
+            {importPreview.errors.length > 0 && (
+              <div className="mt-3 grid gap-1 text-sm text-[var(--arena-red)]">
+                {importPreview.errors.map((error) => <p key={error}>{error}</p>)}
+              </div>
+            )}
+            <div className="mt-4 max-h-64 overflow-auto rounded-md border border-[var(--arena-line)] bg-white">
+              <table className="w-full min-w-[760px] text-left text-xs">
+                <thead className="bg-[var(--arena-surface)]">
+                  <tr>
+                    <th className="px-3 py-2">Action</th>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Slug</th>
+                    <th className="px-3 py-2">Source</th>
+                    <th className="px-3 py-2">Reason</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--arena-line)]">
+                  {importPreview.preview.slice(0, 25).map((row, index) => (
+                    <tr key={`${row.slug}-${index}`}>
+                      <td className="px-3 py-2">{row.action}</td>
+                      <td className="px-3 py-2">{row.record.name}</td>
+                      <td className="px-3 py-2">{row.duplicateSlug ?? row.slug}</td>
+                      <td className="px-3 py-2">{row.record.sourceProvider}</td>
+                      <td className="px-3 py-2">{row.reason ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+
       <section className="grid gap-3 rounded-lg border border-[var(--arena-line)] bg-white p-4 sm:grid-cols-3">
         <button
           type="button"
@@ -238,6 +365,50 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           Unreviewed
           <span className="block font-mono text-2xl">{unreviewedCount}</span>
         </button>
+      </section>
+
+      <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-serif text-3xl font-semibold">Internal review queue</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
+              Prioritized by source quality, source evidence, category importance, and rough risk surface. Promotion to reviewed remains manual.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setFilter("unreviewed");
+              void loadTools("unreviewed");
+            }}
+            className="rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold hover:bg-[var(--arena-blue-soft)]"
+          >
+            Load unreviewed
+          </button>
+        </div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {reviewQueue.map((tool) => {
+            const needsSourceEvidence = !tool.githubUrl && !tool.packageUrl && !tool.sourceUrl;
+            return (
+              <div key={tool.slug} className="rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">{tool.name}</h3>
+                    <p className="mt-1 text-xs text-[var(--arena-muted)]">{tool.category}</p>
+                  </div>
+                  <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 py-1 text-xs font-semibold">
+                    {needsSourceEvidence ? "Needs source evidence" : "Source linked"}
+                  </span>
+                </div>
+                <p className="mt-3 line-clamp-2 text-xs leading-5 text-[var(--arena-muted)]">{tool.description}</p>
+                <div className="mt-3 grid gap-1 text-xs text-[var(--arena-muted)]">
+                  <span>Source: {tool.source || "Manual/imported"}</span>
+                  <span>Repo: {tool.githubUrl ? "yes" : "pending"} · Package: {tool.packageUrl ? "yes" : "pending"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <div className="rounded-lg border border-[var(--arena-blue-line)] bg-[var(--arena-blue-soft)] px-4 py-3 text-sm font-medium">

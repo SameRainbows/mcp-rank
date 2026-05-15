@@ -60,7 +60,11 @@ export function sourceLinksFor(server: McpServer) {
     links.push({ label: "Package page", type: "package", url: packageUrl });
   }
 
-  if (!links.some((link) => link.url === "https://registry.modelcontextprotocol.io/")) {
+  const shouldAddOfficialRegistry =
+    server.source.toLowerCase().includes("official mcp registry") ||
+    server.sourceProvider?.toLowerCase().includes("official");
+
+  if (shouldAddOfficialRegistry && !links.some((link) => link.url === "https://registry.modelcontextprotocol.io/")) {
     links.push({ label: "Official MCP registry", type: "registry", url: "https://registry.modelcontextprotocol.io/" });
   }
 

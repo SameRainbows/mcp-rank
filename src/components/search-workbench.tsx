@@ -17,8 +17,16 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   const [client, setClient] = useState<ClientKey | "all">("all");
   const [risk, setRisk] = useState<RiskLevel | "all">("all");
   const [sourceEvidence, setSourceEvidence] = useState<"all" | "ready" | "needs">("all");
+  const [reviewState, setReviewState] = useState<"all" | "reviewed" | "indexed">("all");
 
   const results = useMemo(() => {
+    const statusWeight = (server: McpServer) => {
+      if (server.status === "maintainer_verified") return 0;
+      if (server.status === "reviewed" || server.status === "high_risk") return 1;
+      if (server.status === "deprecated") return 3;
+      return 2;
+    };
+
     return servers
       .filter((server) => {
         const text = `${server.name} ${server.category} ${server.tagline} ${server.signals.join(" ")}`.toLowerCase();
@@ -27,13 +35,16 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           text.includes(query.toLowerCase()) &&
           (client === "all" || server.clients.includes(client)) &&
           (risk === "all" || server.risk === risk) &&
+          (reviewState === "all" ||
+            (reviewState === "reviewed" && server.status !== "indexed") ||
+            (reviewState === "indexed" && server.status === "indexed")) &&
           (sourceEvidence === "all" ||
             (sourceEvidence === "ready" && !needsSourceEvidence) ||
             (sourceEvidence === "needs" && needsSourceEvidence))
         );
       })
-      .sort((a, b) => overallScore(b.score) - overallScore(a.score));
-  }, [client, query, risk, servers, sourceEvidence]);
+      .sort((a, b) => statusWeight(a) - statusWeight(b) || overallScore(b.score) - overallScore(a.score));
+  }, [client, query, reviewState, risk, servers, sourceEvidence]);
 
   return (
     <section className="rounded-xl border border-[var(--arena-line)] bg-white shadow-[0_10px_35px_rgba(33,29,24,0.05)]">
@@ -52,6 +63,15 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           />
         </label>
         <div className="mt-3 flex flex-wrap gap-2">
+          <select
+            value={reviewState}
+            onChange={(event) => setReviewState(event.target.value as "all" | "reviewed" | "indexed")}
+            className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-medium"
+          >
+            <option value="all">Reviewed first</option>
+            <option value="reviewed">Reviewed only</option>
+            <option value="indexed">Indexed only</option>
+          </select>
           <select
             value={client}
             onChange={(event) => setClient(event.target.value as ClientKey | "all")}
@@ -103,8 +123,13 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
+              {server.status === "indexed" && (
+                <p className="mt-2 text-xs font-semibold text-[var(--arena-muted)]">
+                  Indexed from public source, not yet reviewed by MCP Rank.
+                </p>
+              )}
               <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">
-                {server.packageName || (server.status === "indexed" ? "Needs source evidence" : "Package pending")} · {confidenceLabel(server)} confidence
+                {server.packageName || (server.status === "indexed" ? "Source evidence pending" : "Package pending")} · {confidenceLabel(server)} confidence
               </p>
             </div>
             <div className="flex items-center gap-3 sm:justify-end">

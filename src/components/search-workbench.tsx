@@ -22,15 +22,26 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   const results = useMemo(() => {
     const statusWeight = (server: McpServer) => {
       if (server.status === "maintainer_verified") return 0;
-      if (server.status === "reviewed" || server.status === "high_risk") return 1;
-      if (server.status === "deprecated") return 3;
+      if (server.status === "reviewed") return 1;
+      if (server.status === "high_risk") return 2;
+      if (server.status === "indexed") return 3;
+      return 4;
+    };
+
+    const confidenceWeight = (server: McpServer) => {
+      if (server.confidence === "high") return 0;
+      if (server.confidence === "medium") return 1;
       return 2;
+    };
+
+    const hasSourceEvidence = (server: McpServer) => {
+      return Boolean(server.packageName || server.repositoryUrl || server.sourceLinks.some((link) => link.url));
     };
 
     return servers
       .filter((server) => {
         const text = `${server.name} ${server.category} ${server.tagline} ${server.signals.join(" ")}`.toLowerCase();
-        const needsSourceEvidence = server.status === "indexed" && !server.packageName;
+        const needsSourceEvidence = server.status === "indexed" && !hasSourceEvidence(server);
         return (
           text.includes(query.toLowerCase()) &&
           (client === "all" || server.clients.includes(client)) &&
@@ -43,7 +54,13 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
             (sourceEvidence === "needs" && needsSourceEvidence))
         );
       })
-      .sort((a, b) => statusWeight(a) - statusWeight(b) || overallScore(b.score) - overallScore(a.score));
+      .sort(
+        (a, b) =>
+          statusWeight(a) - statusWeight(b) ||
+          confidenceWeight(a) - confidenceWeight(b) ||
+          overallScore(b.score) - overallScore(a.score) ||
+          a.name.localeCompare(b.name),
+      );
   }, [client, query, reviewState, risk, servers, sourceEvidence]);
 
   return (
@@ -129,7 +146,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
                 </p>
               )}
               <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">
-                {server.packageName || (server.status === "indexed" ? "Source evidence pending" : "Package pending")} · {confidenceLabel(server)} confidence
+                {[server.packageName || server.repositoryUrl || (server.status === "indexed" ? "Needs source review" : "Source-linked review"), `${confidenceLabel(server)} confidence`].join(" · ")}
               </p>
             </div>
             <div className="flex items-center gap-3 sm:justify-end">

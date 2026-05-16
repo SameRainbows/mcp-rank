@@ -441,11 +441,15 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                   </td>
                   <td className="px-4 py-4">
                     <div>{tool.source || "Manual"}</div>
-                    <div className="mt-1 max-w-48 truncate text-xs text-[var(--arena-muted)]">{tool.sourceUrl}</div>
+                    <div className="mt-1 max-w-48 truncate text-xs text-[var(--arena-muted)]">
+                      {tool.sourceUrl || "Source URL needs review"}
+                    </div>
                   </td>
                   <td className="max-w-52 px-4 py-4">
                     <div className="truncate text-xs">{tool.githubUrl || "Not linked"}</div>
-                    <div className="mt-2 text-xs text-[var(--arena-muted)]">{tool.packageUrl}</div>
+                    <div className="mt-2 text-xs text-[var(--arena-muted)]">
+                      {tool.packageUrl || "Package URL not required yet"}
+                    </div>
                   </td>
                   <td className="px-4 py-4 font-mono">{tool.stars ?? "-"}</td>
                   <td className="px-4 py-4 text-xs">{tool.lastCommit ? tool.lastCommit.slice(0, 10) : "-"}</td>

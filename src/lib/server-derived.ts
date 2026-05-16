@@ -40,6 +40,19 @@ export function isTrustedRankable(server: McpServer) {
 }
 
 export function packageUrlFor(server: McpServer) {
+  if (server.installCommand.startsWith("uvx ") && server.packageName) {
+    return `https://pypi.org/project/${server.packageName}/`;
+  }
+
+  if (server.packageName.startsWith("docker.io/")) {
+    const image = server.packageName.replace("docker.io/", "").split(":")[0];
+    return `https://hub.docker.com/r/${image}`;
+  }
+
+  if (server.packageName.startsWith("ghcr.io/")) {
+    return `https://github.com/${server.packageName.replace("ghcr.io/", "").split(":")[0]}`;
+  }
+
   if (server.packageName.startsWith("@")) {
     return `https://www.npmjs.com/package/${server.packageName}`;
   }

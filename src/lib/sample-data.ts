@@ -48,6 +48,10 @@ function npmPackage(name: string): SourceLink {
   return { label: "NPM package", type: "package", url: `https://www.npmjs.com/package/${name}` };
 }
 
+function pythonPackage(name: string): SourceLink {
+  return { label: "PyPI package", type: "package", url: `https://pypi.org/project/${name}/` };
+}
+
 const reviewedServers: McpServer[] = [
   server({
     slug: "github-mcp-server",
@@ -213,8 +217,13 @@ const reviewedServers: McpServer[] = [
     name: "Slack MCP Server",
     category: "Communication",
     tagline: "Workspace messages, channels, and collaboration context for team agents.",
-    source: "Archived MCP reference server, Zencoder-maintained continuation, GitHub repository",
-    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers-archived/tree/main/src/slack"), registryLink],
+    source: "Archived MCP reference server, Zencoder continuation, package metadata, registry listing",
+    sourceLinks: [
+      repo("https://github.com/modelcontextprotocol/servers-archived/tree/main/src/slack"),
+      repo("https://github.com/zencoderai/slack-mcp-server"),
+      npmPackage("@modelcontextprotocol/server-slack"),
+      registryLink,
+    ],
     packageName: "@modelcontextprotocol/server-slack",
     installCommand: "npx -y @modelcontextprotocol/server-slack",
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
@@ -227,9 +236,34 @@ const reviewedServers: McpServer[] = [
     risk: "high",
     score: { installDocs: 74, maintenance: 65, auth: 58, compatibility: 72, usefulness: 86, safety: 49 },
     signals: ["High collaboration value", "OAuth and workspace retention sensitivity", "Archived original reference path"],
-    evidence: ["Useful for channel context and team coordination.", "Risk is high because chat history can include secrets, customer data, and personnel data.", "Original reference server path is archived, so ownership and maintenance require careful verification."],
-    cautions: ["Do not call Slack one of the safest MCP servers.", "Review OAuth scopes, retention policy, and workspace approval before enabling.", "Avoid broad channel access for autonomous agents."],
+    evidence: [
+      "The useful surface is obvious and repeatable: channel search, thread reading, and message drafting can materially reduce context switching.",
+      "The original MCP reference path is archived, so this review treats provenance as medium confidence even with package and continuation links.",
+      "Slack workspace content routinely includes customer names, incident details, credentials pasted by mistake, HR discussions, and private roadmap notes.",
+      "The server should be evaluated at the channel and OAuth-scope level, not as one workspace-wide permission decision.",
+      "A safer rollout starts with public or low-sensitivity channels and blocks autonomous posting until approval flows are tested.",
+    ],
+    cautions: [
+      "Do not call Slack one of the safest MCP servers.",
+      "Review OAuth scopes, retention policy, channel allowlists, and workspace approval before enabling.",
+      "Avoid broad private-channel access for autonomous agents.",
+      "Separate read/search permission from send-message permission, especially in incident and customer channels.",
+    ],
     examples: ["Summarize an incident channel.", "Find context from a release discussion.", "Draft a follow-up based on a public team channel."],
+    useCases: [
+      "Best for teams that already have clear channel taxonomy and want agents to summarize public project or incident channels.",
+      "Useful for support handoffs when the agent can read a narrow set of channels and produce draft-only responses.",
+      "Poor fit for unmanaged workspaces where sensitive data is spread across private channels without retention or access policy.",
+    ],
+    riskAnalysis: [
+      "The highest risk is data overcollection: a broad workspace token can expose far more context than the user intended.",
+      "Posting and reaction tools can create operational noise or make commitments on behalf of people if not gated.",
+      "Medium evidence confidence is appropriate because useful public source links exist, but the archived original path weakens maintenance certainty.",
+    ],
+    maintenanceNotes: [
+      "Recheck whether teams are using the archived reference server, the Zencoder continuation, or a different Slack-maintained path.",
+      "Future review should verify current OAuth scopes, event handling, and whether send-message tools can be disabled.",
+    ],
   }),
   server({
     slug: "postgres",
@@ -250,9 +284,34 @@ const reviewedServers: McpServer[] = [
     risk: "medium",
     score: { installDocs: 80, maintenance: 75, auth: 67, compatibility: 84, usefulness: 88, safety: 66 },
     signals: ["Strong analytical value", "Credential handling is deployment-specific", "Readonly roles strongly recommended"],
-    evidence: ["Straightforward install for teams already using connection strings.", "Useful for schema exploration and read-only analysis.", "Safety depends on database role, network, and environment separation."],
-    cautions: ["Use readonly roles and non-production replicas where possible.", "Do not give agent sessions production write credentials."],
+    evidence: [
+      "The install model is easy to reproduce for teams that already manage Postgres connection strings.",
+      "The strongest use case is read-only schema and query analysis, where the agent can explain tables without receiving application admin privileges.",
+      "The archived reference path caps confidence at medium even though package and source evidence are directly linkable.",
+      "Operational safety is determined by the database role: a readonly reporting replica is a different risk class from a production owner connection.",
+      "Review quality depends on inspecting whether the deployed config exposes mutation tools, transaction controls, or unrestricted SQL execution.",
+    ],
+    cautions: [
+      "Use readonly roles and non-production replicas where possible.",
+      "Do not give agent sessions production write credentials.",
+      "Block access to tables with secrets, auth tokens, customer exports, or regulated data unless the review explicitly covers them.",
+      "Log all query text because prompts can accidentally generate broad scans over sensitive tables.",
+    ],
     examples: ["Explain table relationships.", "Draft a read-only analytics query.", "Find likely PII columns."],
+    useCases: [
+      "Best for engineering teams that need schema exploration, migration planning, or query explanation against a safe replica.",
+      "Useful for support analytics when the database role is constrained to approved views.",
+      "Not suitable as a default MCP server for production databases without role isolation and query logging.",
+    ],
+    riskAnalysis: [
+      "The main risk is credential scope, not the MCP protocol surface by itself.",
+      "SQL generation can leak or transform sensitive rows even when the agent only appears to be answering a question.",
+      "A safe deployment should combine network allowlists, readonly roles, row-level controls where available, and human review for expensive queries.",
+    ],
+    maintenanceNotes: [
+      "Recheck active maintenance because the reviewed source path is archived.",
+      "Future review should include a live install test against a disposable database and document the exact tool list exposed.",
+    ],
   }),
   server({
     slug: "stripe-mcp",
@@ -273,9 +332,34 @@ const reviewedServers: McpServer[] = [
     risk: "high",
     score: { installDocs: 83, maintenance: 87, auth: 64, compatibility: 72, usefulness: 84, safety: 55 },
     signals: ["Financial data access", "Operationally useful", "Restricted API keys required"],
-    evidence: ["Useful for payment debugging and billing support workflows.", "Safety score is constrained by sensitive financial data exposure.", "Restricted keys and sandbox mode are central to safe rollout."],
-    cautions: ["Never allow autonomous refund or invoice mutation without approval.", "Start with sandbox mode and restricted keys."],
+    evidence: [
+      "Source confidence is medium because Stripe-owned toolkit and package links are available, but the operational surface is still high risk.",
+      "The practical value is strongest for support and billing investigations: payment intent lookup, subscription state explanation, and invoice context.",
+      "The review should distinguish read-only lookup from mutation tools such as refunds, invoice edits, customer updates, or subscription changes.",
+      "Sandbox mode is not optional for first rollout because real payment data creates customer, compliance, and financial-control exposure.",
+      "Restricted API keys and per-environment separation are the main safety controls; generic secret storage is not enough.",
+    ],
+    cautions: [
+      "Never allow autonomous refund, invoice, customer, or subscription mutation without approval.",
+      "Start with sandbox mode and restricted keys.",
+      "Keep production keys out of local MCP configs unless the host is managed and audited.",
+      "Treat payment identifiers and billing notes as customer data in prompt logs.",
+    ],
     examples: ["Look up a failed payment.", "Explain a subscription state.", "Draft a billing investigation checklist."],
+    useCases: [
+      "Best for billing support teams that need fast object lookup with scoped, read-only credentials.",
+      "Useful for engineering incident response when payment failures need explanation before a human acts.",
+      "Poor default for autonomous agents that can mutate financial records or message customers directly.",
+    ],
+    riskAnalysis: [
+      "Financial systems carry high blast radius even when the requested task looks like retrieval.",
+      "Mutation tools should require separate approval and ideally a different credential from read-only investigation.",
+      "Prompt and transcript retention must be reviewed because payment metadata can include customer and account details.",
+    ],
+    maintenanceNotes: [
+      "Recheck toolkit release notes for newly exposed mutation tools before changing safety status.",
+      "Future review should document an explicit sandbox install path and a restricted-key policy.",
+    ],
   }),
   server({
     slug: "brave-search",
@@ -369,7 +453,7 @@ const reviewedServers: McpServer[] = [
     stars: 85600,
     lastReviewed: "2026-05-12",
     status: "reviewed",
-    confidence: "medium",
+    confidence: "high",
     transports: ["stdio"],
     clients,
     risk: "low",
@@ -404,7 +488,7 @@ const reviewedServers: McpServer[] = [
     category: "Web retrieval",
     tagline: "Fetch and convert web content for model-readable context.",
     source: "MCP reference server",
-    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/fetch"), registryLink],
+    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/fetch"), pythonPackage("mcp-server-fetch"), registryLink],
     packageName: "mcp-server-fetch",
     installCommand: "uvx mcp-server-fetch",
     repositoryUrl: "https://github.com/modelcontextprotocol/servers",
@@ -446,7 +530,7 @@ const reviewedServers: McpServer[] = [
     category: "Developer tools",
     tagline: "Read and inspect local Git repositories from MCP clients.",
     source: "MCP reference server",
-    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/git"), registryLink],
+    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/git"), pythonPackage("mcp-server-git"), registryLink],
     packageName: "mcp-server-git",
     installCommand: "uvx mcp-server-git --repository ./repo",
     repositoryUrl: "https://github.com/modelcontextprotocol/servers",
@@ -488,7 +572,7 @@ const reviewedServers: McpServer[] = [
     category: "Utilities",
     tagline: "Timezone conversion and current-time utilities for agents.",
     source: "MCP reference server",
-    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/time"), registryLink],
+    sourceLinks: [repo("https://github.com/modelcontextprotocol/servers/tree/main/src/time"), pythonPackage("mcp-server-time"), registryLink],
     packageName: "mcp-server-time",
     installCommand: "uvx mcp-server-time",
     repositoryUrl: "https://github.com/modelcontextprotocol/servers",
@@ -529,8 +613,15 @@ const reviewedServers: McpServer[] = [
     name: "Notion MCP Server",
     category: "Productivity",
     tagline: "Workspace page and database access for Notion-backed teams.",
-    source: "Notion MCP repository and MCP directories",
-    sourceLinks: [repo("https://github.com/makenotion/notion-mcp-server"), registryLink],
+    source: "Notion developer docs, Notion MCP repository, package metadata, registry listing",
+    sourceLinks: [
+      docs("https://developers.notion.com/guides/mcp/mcp"),
+      docs("https://developers.notion.com/guides/mcp/get-started-with-mcp"),
+      repo("https://github.com/makenotion/notion-mcp-server"),
+      npmPackage("@notionhq/notion-mcp-server"),
+      { label: "Hosted MCP endpoint", type: "website", url: "https://mcp.notion.com/mcp" },
+      registryLink,
+    ],
     packageName: "@notionhq/notion-mcp-server",
     installCommand: "npx -y @notionhq/notion-mcp-server",
     repositoryUrl: "https://github.com/makenotion/notion-mcp-server",
@@ -543,19 +634,51 @@ const reviewedServers: McpServer[] = [
     risk: "medium",
     score: score(81),
     signals: ["Workspace knowledge access", "OAuth scope review needed", "High productivity value"],
-    evidence: ["Useful for internal docs and project knowledge.", "Risk depends on workspace scope and page/database permissions."],
-    cautions: ["Do not grant broad workspace access without approval.", "Review whether pages include customer or HR data."],
+    evidence: [
+      "Notion now has first-party developer docs for hosted MCP, including a concrete remote endpoint for supported clients.",
+      "The local repository remains useful source evidence, but the docs indicate the hosted OAuth flow is the preferred path for many users.",
+      "The server's value is high when the agent needs project docs, task databases, meeting notes, and decision records in one workspace.",
+      "The risk is not package install complexity; it is workspace breadth, page permissions, database contents, and write access.",
+      "Medium confidence is appropriate until the review separately validates hosted OAuth behavior, local package behavior, and client-specific permission prompts.",
+    ],
+    cautions: [
+      "Do not grant broad workspace access without approval.",
+      "Review whether pages include customer, HR, finance, legal, or incident data.",
+      "Separate read-only knowledge retrieval from page or database mutation workflows.",
+      "Document which teamspaces and databases are allowed before connecting an autonomous coding or planning agent.",
+    ],
     examples: ["Find project specs.", "Summarize a planning database.", "Draft status updates from docs."],
+    useCases: [
+      "Best for product and engineering teams whose source of truth already lives in Notion pages and databases.",
+      "Useful for generating project updates when the agent can read a narrow set of approved pages.",
+      "Not a good first MCP rollout for organizations with messy workspace permissions or sensitive documents spread across shared teamspaces.",
+    ],
+    riskAnalysis: [
+      "Notion pages often blend strategy, customer notes, credentials, and personal data, so page-level scope matters more than the app name.",
+      "Write-capable workflows can alter specs, tasks, or public docs if the client does not clearly confirm mutations.",
+      "The hosted endpoint simplifies setup but should still be reviewed for OAuth consent, revocation, and audit logging.",
+    ],
+    maintenanceNotes: [
+      "Recheck the developer docs and hosted endpoint instructions before updating install guidance.",
+      "Future review should compare local package tools with hosted MCP tools because Notion is prioritizing the hosted path.",
+    ],
   }),
   server({
     slug: "browserbase",
     name: "Browserbase",
     category: "Web automation",
     tagline: "Cloud browser automation for agents that need controlled browser sessions.",
-    source: "Browserbase repository and docs",
-    sourceLinks: [repo("https://github.com/browserbase/mcp-server-browserbase"), docs("https://docs.browserbase.com/integrations/mcp/introduction"), registryLink],
-    packageName: "@browserbasehq/mcp-server-browserbase",
-    installCommand: "npx -y @browserbasehq/mcp-server-browserbase",
+    source: "Browserbase docs, hosted MCP endpoint, repository, package metadata",
+    sourceLinks: [
+      docs("https://docs.browserbase.com/integrations/mcp/introduction"),
+      { label: "Browserbase MCP product page", type: "website", url: "https://www.browserbase.com/mcp" },
+      repo("https://github.com/browserbase/mcp-server-browserbase"),
+      npmPackage("@browserbasehq/mcp"),
+      { label: "Hosted MCP endpoint", type: "website", url: "https://mcp.browserbase.com/mcp" },
+      registryLink,
+    ],
+    packageName: "@browserbasehq/mcp",
+    installCommand: "npx -y @browserbasehq/mcp",
     repositoryUrl: "https://github.com/browserbase/mcp-server-browserbase",
     stars: 1800,
     lastReviewed: "2026-05-11",
@@ -566,9 +689,34 @@ const reviewedServers: McpServer[] = [
     risk: "medium",
     score: score(80),
     signals: ["Remote browser sessions", "Useful testing workflow", "Credential and session controls matter"],
-    evidence: ["Strong fit for QA and browser inspection.", "Risk depends on session data, authenticated apps, and artifact storage."],
-    cautions: ["Do not run unattended against production admin surfaces.", "Store screenshots and session artifacts according to policy."],
+    evidence: [
+      "Browserbase documents both hosted Streamable HTTP and local stdio-style setup paths, which improves rollout clarity.",
+      "The current repository describes a Stagehand-backed tool surface for navigation, action, observation, extraction, and session lifecycle control.",
+      "The product is strongest for QA, preview-deployment inspection, and controlled browser tasks where the environment is disposable.",
+      "The same browser capability becomes sensitive when pointed at production admin apps, authenticated customer sessions, or sites with scraping restrictions.",
+      "Medium confidence reflects strong public source and docs, while risk remains medium because cloud browser sessions create artifacts and credential-handling questions.",
+    ],
+    cautions: [
+      "Do not run unattended against production admin surfaces.",
+      "Store screenshots, traces, extracted data, and session artifacts according to policy.",
+      "Use dedicated test accounts and preview deployments before trying authenticated workflows.",
+      "Review model-provider and Browserbase project credentials separately; both can influence what the browser can see or do.",
+    ],
     examples: ["Validate signup flows.", "Capture screenshots.", "Inspect deployed pages."],
+    useCases: [
+      "Best for agent-assisted QA on staging, preview deployments, and public product flows.",
+      "Useful for extracting structured information from pages when a team can define allowed domains and artifact retention.",
+      "Poor fit for high-trust production admin workflows unless sessions, accounts, and captured artifacts are isolated.",
+    ],
+    riskAnalysis: [
+      "Remote browser automation can click, type, submit forms, and expose rendered private data through screenshots or extracted text.",
+      "Hosted sessions add an infrastructure boundary: teams should review project isolation, credential storage, and artifact retention.",
+      "Risk is manageable when the browser is constrained to test accounts, allowed domains, and explicit human approval for destructive actions.",
+    ],
+    maintenanceNotes: [
+      "Recheck docs for hosted endpoint, npm package name, and tool list because Browserbase's MCP implementation is moving quickly.",
+      "Future review should run a live smoke test and record which artifacts are retained after session close.",
+    ],
   }),
   server({
     slug: "sqlite",
@@ -583,7 +731,7 @@ const reviewedServers: McpServer[] = [
     stars: 85600,
     lastReviewed: "2026-05-10",
     status: "reviewed",
-    confidence: "high",
+    confidence: "medium",
     transports: ["stdio"],
     clients: ["claude", "cursor"],
     risk: "medium",
@@ -619,15 +767,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "reviewed",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude", "cursor"],
     risk: "medium",
     score: score(72),
-    signals: ["Operational data access", "Credential handling required", "Archived reference path"],
-    evidence: ["Useful for cache inspection and queue debugging.", "Confidence remains low pending current maintainer verification."],
-    cautions: ["Do not connect to production Redis without strict read-only policy.", "Keys may contain session or customer data."],
+    signals: ["Needs current maintainer evidence", "Operational data access", "Archived reference path"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "Redis access can be useful for cache inspection and queue debugging, but current ownership and install behavior need verification."],
+    cautions: ["Do not connect to production Redis without strict read-only policy.", "Keys may contain session or customer data.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Inspect cache keys.", "Debug queue state.", "Check TTL behavior."],
   }),
   server({
@@ -642,15 +790,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "reviewed",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude", "cursor"],
     risk: "medium",
     score: score(74),
-    signals: ["Incident context", "Potential PII in stack traces", "Archived reference path"],
-    evidence: ["Useful for incident summaries.", "Risk depends on issue payload content and token scope."],
-    cautions: ["Stack traces may contain sensitive data.", "Scope tokens to projects and read-only operations."],
+    signals: ["Needs current maintainer evidence", "Potential PII in stack traces", "Archived reference path"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "Sentry context can help incident triage, but issue payloads, token scopes, and active maintenance need a fresh review."],
+    cautions: ["Stack traces may contain sensitive data.", "Scope tokens to projects and read-only operations.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Summarize top errors.", "Group related incidents.", "Draft a remediation checklist."],
   }),
   server({
@@ -665,15 +813,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "high_risk",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude"],
     risk: "high",
     score: score(70),
-    signals: ["Workspace file access", "OAuth sensitive", "Archived reference path"],
-    evidence: ["Potentially useful for document retrieval.", "High risk until scopes and current ownership are verified."],
-    cautions: ["Drive often contains HR, legal, finance, and customer data.", "Do not enable broad domain-wide access."],
+    signals: ["Needs current maintainer evidence", "Workspace file access", "OAuth sensitive", "Archived reference path"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "Drive retrieval can be valuable, but source maintenance, OAuth scopes, and domain-wide data exposure need review before ranking."],
+    cautions: ["Drive often contains HR, legal, finance, and customer data.", "Do not enable broad domain-wide access.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Find a public project doc.", "Summarize a shared spec.", "Locate onboarding materials."],
   }),
   server({
@@ -682,8 +830,12 @@ const reviewedServers: McpServer[] = [
     category: "Project management",
     tagline: "Issue, project, and roadmap workflows for Linear teams.",
     source: "Official Linear docs and MCP directories",
-    sourceLinks: [docs("https://linear.app/docs/mcp"), registryLink],
-    packageName: "linear-mcp",
+    sourceLinks: [
+      docs("https://linear.app/docs/mcp"),
+      { label: "Hosted MCP endpoint", type: "website", url: "https://mcp.linear.app/sse" },
+      registryLink,
+    ],
+    packageName: "",
     installCommand: "See Linear MCP docs for current install path",
     repositoryUrl: "",
     stars: 0,
@@ -712,7 +864,7 @@ const reviewedServers: McpServer[] = [
     stars: 18800,
     lastReviewed: "2026-05-10",
     status: "reviewed",
-    confidence: "medium",
+    confidence: "high",
     transports: ["stdio"],
     clients: ["claude", "cursor", "codex"],
     risk: "medium",
@@ -753,15 +905,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "reviewed",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude", "cursor"],
     risk: "medium",
     score: score(73),
-    signals: ["Useful automation surface", "Archived reference path", "Potential scraping policy concerns"],
-    evidence: ["Browser automation is useful but needs active ownership review.", "Confidence remains low until maintained alternative is verified."],
-    cautions: ["Respect site terms and robots policy.", "Use test credentials for authenticated sessions."],
+    signals: ["Needs current maintainer evidence", "Archived reference path", "Potential scraping policy concerns"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "Browser automation is useful, but this archived path needs active ownership review before it is treated as a reviewed tool."],
+    cautions: ["Respect site terms and robots policy.", "Use test credentials for authenticated sessions.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Capture a screenshot.", "Inspect page content.", "Test a simple flow."],
   }),
   server({
@@ -776,15 +928,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "reviewed",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude"],
     risk: "low",
     score: score(71),
-    signals: ["External API key", "Low local data exposure", "Archived reference path"],
-    evidence: ["Useful for public location lookups.", "Confidence is low pending current ownership and install verification."],
-    cautions: ["Do not send sensitive customer location data without policy review.", "Monitor API key usage and spend."],
+    signals: ["Needs current maintainer evidence", "External API key", "Archived reference path"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "Maps lookup can be low local-data risk, but current ownership, API-key behavior, and install path need verification."],
+    cautions: ["Do not send sensitive customer location data without policy review.", "Monitor API key usage and spend.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Find nearby services.", "Estimate travel distance.", "Resolve place details."],
   }),
   server({
@@ -799,15 +951,15 @@ const reviewedServers: McpServer[] = [
     repositoryUrl: "https://github.com/modelcontextprotocol/servers-archived",
     stars: 85600,
     lastReviewed: "2026-05-10",
-    status: "reviewed",
+    status: "indexed",
     confidence: "low",
     transports: ["stdio"],
     clients: ["claude", "cursor"],
     risk: "medium",
     score: score(72),
-    signals: ["Code-hosting access", "Token scope sensitive", "Archived reference path"],
-    evidence: ["Useful for teams on GitLab.", "Low confidence because current maintenance path needs verification."],
-    cautions: ["Use least-privilege tokens.", "Review write-capable operations separately."],
+    signals: ["Needs current maintainer evidence", "Code-hosting access", "Archived reference path"],
+    evidence: ["MCP Rank demoted this row to indexed because the available evidence is not strong enough for reviewed status.", "GitLab workflows are useful, but this archived path needs current maintenance and token-scope verification before review promotion."],
+    cautions: ["Use least-privilege tokens.", "Review write-capable operations separately.", "Treat as needs-evidence until a maintained source path is verified."],
     examples: ["Find merge requests.", "Summarize an issue.", "Inspect CI status."],
   }),
   server({
@@ -1086,8 +1238,14 @@ function reviewedScore(base: number, risk: RiskLevel) {
   };
 }
 
+const reviewableLightweightSlugs = new Set(
+  indexedSeeds
+    .filter((item) => lightweightReviewedSlugs.has(item.slug) && Boolean(item.repositoryUrl || item.packageName))
+    .map((item) => item.slug),
+);
+
 const lightweightReviewedServers = indexedSeeds
-  .filter((item) => lightweightReviewedSlugs.has(item.slug))
+  .filter((item) => reviewableLightweightSlugs.has(item.slug))
   .map((item) => {
     const risk = item.risk ?? "medium";
     const base = risk === "high" ? 64 : risk === "medium" ? 71 : item.repositoryUrl ? 77 : 73;
@@ -1158,7 +1316,7 @@ const lightweightReviewedServers = indexedSeeds
     });
   });
 
-const remainingIndexedSeeds = indexedSeeds.filter((item) => !lightweightReviewedSlugs.has(item.slug));
+const remainingIndexedSeeds = indexedSeeds.filter((item) => !reviewableLightweightSlugs.has(item.slug));
 
 const indexedServers = remainingIndexedSeeds.map((item) =>
   server({

@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { servers } from "./sample-data";
-import { isTrustedRankable } from "./server-derived";
+import { isTrustedRankable, packageUrlFor } from "./server-derived";
 import type { ConfidenceScore, McpTool, McpToolInput, ToolStatus } from "./tool-types";
 
 type ToolRow = {
@@ -120,11 +120,9 @@ const seedTools: McpTool[] = servers.map((server) =>
     description: server.tagline,
     category: server.category,
     source: server.source,
-    sourceUrl: server.repositoryUrl,
+    sourceUrl: server.sourceLinks[0]?.url ?? server.repositoryUrl,
     githubUrl: server.repositoryUrl,
-    packageUrl: server.packageName.startsWith("@")
-      ? `https://www.npmjs.com/package/${server.packageName}`
-      : "",
+    packageUrl: packageUrlFor(server),
     installCommand: server.installCommand,
     stars: server.stars,
     license: "",

@@ -9,8 +9,12 @@ import { ServerViewTracker } from "@/components/server-view-tracker";
 import { TrackedSourceLink } from "@/components/tracked-source-link";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { getServer, getServers } from "@/lib/data";
+import { listReviewSnapshots } from "@/lib/review-snapshots";
 import { confidenceLabel, evidenceUpdatedAt, reviewStatusLabel, sourceLinksFor } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
+import type { ReviewSnapshot } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -41,6 +45,7 @@ export default async function ServerPage({ params }: PageProps) {
 
   const total = overallScore(server.score);
   const sourceLinks = sourceLinksFor(server);
+  const reviewSnapshots = await listReviewSnapshots(server.slug, server);
 
   if (server.status === "indexed") {
     return (
@@ -107,6 +112,7 @@ export default async function ServerPage({ params }: PageProps) {
             </div>
 
             <aside className="grid content-start gap-5">
+              <EvidenceHistoryCard snapshots={reviewSnapshots} indexed />
               <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
                 <h2 className="font-serif text-2xl font-semibold">Sources</h2>
                 <div className="mt-3 grid gap-3 text-sm">
@@ -211,6 +217,8 @@ export default async function ServerPage({ params }: PageProps) {
                 })}
               </div>
             </section>
+
+            <EvidenceHistoryCard snapshots={reviewSnapshots} />
 
             <section className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
               <h2 className="font-serif text-2xl font-semibold">Evidence notes</h2>
@@ -323,5 +331,82 @@ export default async function ServerPage({ params }: PageProps) {
         </section>
       </main>
     </ArenaShell>
+  );
+}
+
+function formatSnapshotDate(value: string) {
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return value;
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(timestamp);
+}
+
+function scoreMovement(snapshot: ReviewSnapshot) {
+  if (snapshot.overallScore === null) return "No score";
+  if (snapshot.previousOverallScore === null || snapshot.previousOverallScore === undefined) {
+    return String(snapshot.overallScore);
+  }
+  if (snapshot.previousOverallScore === snapshot.overallScore) return String(snapshot.overallScore);
+  return `${snapshot.previousOverallScore} -> ${snapshot.overallScore}`;
+}
+
+function EvidenceHistoryCard({ snapshots, indexed = false }: { snapshots: ReviewSnapshot[]; indexed?: boolean }) {
+  if (indexed || snapshots.length === 0) {
+    return (
+      <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
+        <h2 className="font-serif text-2xl font-semibold">Evidence history</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+          No MCP Rank review history has been captured yet. Indexed listings remain excluded from trusted rankings until a review snapshot records score, confidence, and risk evidence.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold">Evidence history</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">
+            Review snapshots show why the current score, confidence, and risk labels changed over time.
+          </p>
+        </div>
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--arena-muted)]">
+          {snapshots[0]?.source.replace(/_/g, " ")}
+        </span>
+      </div>
+
+      <div className="mt-5 overflow-x-auto rounded-lg border border-[var(--arena-line)]">
+        <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+          <thead className="bg-[var(--arena-surface)] text-xs font-semibold text-[var(--arena-muted)]">
+            <tr>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Change</th>
+              <th className="px-4 py-3">Score</th>
+              <th className="px-4 py-3">Confidence</th>
+              <th className="px-4 py-3">Risk</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--arena-line)]">
+            {snapshots.map((snapshot) => (
+              <tr key={snapshot.id} className="align-top">
+                <td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-[var(--arena-muted)]">
+                  {formatSnapshotDate(snapshot.capturedAt)}
+                </td>
+                <td className="px-4 py-4">
+                  <div className="font-semibold">{snapshot.changeSummary}</div>
+                  {snapshot.notes && <p className="mt-1 text-xs leading-5 text-[var(--arena-muted)]">{snapshot.notes}</p>}
+                  <p className="mt-1 text-xs capitalize text-[var(--arena-muted)]">
+                    {snapshot.subjectType} snapshot · {String(snapshot.status).replace(/_/g, " ")}
+                  </p>
+                </td>
+                <td className="px-4 py-4 font-mono font-semibold">{scoreMovement(snapshot)}</td>
+                <td className="px-4 py-4 capitalize text-[var(--arena-muted)]">{snapshot.confidence}</td>
+                <td className="px-4 py-4 capitalize text-[var(--arena-muted)]">{snapshot.risk}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

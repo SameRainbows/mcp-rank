@@ -56,6 +56,22 @@ export type McpServer = {
   maintenanceNotes?: string[];
 };
 
+export type ReviewSnapshot = {
+  id: string;
+  slug: string;
+  subjectType: "server" | "tool" | "seed";
+  score: Partial<ScoreBreakdown>;
+  overallScore: number | null;
+  previousOverallScore?: number | null;
+  status: ReviewStatus | "unreviewed" | "blocked";
+  confidence: ConfidenceLevel | "unreviewed";
+  risk: RiskLevel;
+  changeSummary: string;
+  source: string;
+  notes?: string;
+  capturedAt: string;
+};
+
 export type WeeklyReport = {
   slug: string;
   title: string;

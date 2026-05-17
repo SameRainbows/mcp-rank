@@ -10,7 +10,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
 
   const { slug } = await context.params;
   const body = (await request.json()) as McpToolInput;
-  const tool = await patchMcpTool(slug, body);
+  const tool = await patchMcpTool(slug, body, {
+    changeSummary: body.changeSummary ?? body.review_note,
+    source: body.snapshotSource ?? "admin",
+  });
 
   if (!tool) return Response.json({ error: "Tool not found" }, { status: 404 });
 

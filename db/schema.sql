@@ -40,6 +40,13 @@ create table if not exists scoring_snapshots (
   id bigserial primary key,
   server_slug text not null references mcp_servers(slug) on delete cascade,
   score jsonb not null,
+  overall_score integer,
+  previous_overall_score integer,
+  status text,
+  confidence text,
+  risk text check (risk is null or risk in ('low', 'medium', 'high')),
+  change_summary text,
+  source text not null default 'manual_review',
   stars integer not null default 0,
   notes text,
   captured_at timestamptz not null default now()
@@ -78,3 +85,20 @@ create table if not exists mcp_tools (
 create index if not exists mcp_tools_status_idx on mcp_tools(status);
 create index if not exists mcp_tools_confidence_idx on mcp_tools(confidence_score);
 create index if not exists mcp_tools_category_idx on mcp_tools(category);
+
+create table if not exists mcp_tool_snapshots (
+  id bigserial primary key,
+  tool_slug text not null references mcp_tools(slug) on delete cascade,
+  score jsonb not null default '{}'::jsonb,
+  overall_score integer,
+  previous_overall_score integer,
+  status text not null,
+  confidence_score text not null,
+  risk text not null default 'medium' check (risk in ('low', 'medium', 'high')),
+  change_summary text not null default 'Admin review metadata updated.',
+  source text not null default 'admin',
+  captured_at timestamptz not null default now()
+);
+
+create index if not exists mcp_tool_snapshots_tool_captured_idx
+  on mcp_tool_snapshots(tool_slug, captured_at desc);

@@ -40,6 +40,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
   );
   const [loading, setLoading] = useState(false);
   const [adminToken, setAdminToken] = useState(initialAdminToken);
+  const [reviewNote, setReviewNote] = useState("");
   const [importProvider, setImportProvider] = useState<ImportSourceProvider>("official_registry");
   const [importLimit, setImportLimit] = useState(100);
   const [importQuery, setImportQuery] = useState("");
@@ -104,11 +105,14 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
     setMessage(`CSV preview ready: ${data.newTools} new, ${data.duplicates} duplicates, ${data.skippedInvalid} skipped.`);
   }
 
-  async function patchTool(slug: string, patch: McpToolInput) {
+  async function patchTool(slug: string, patch: McpToolInput, fallbackNote = "Admin review metadata updated.") {
     const response = await fetch(`/api/admin/tools/${slug}`, {
       method: "PATCH",
       headers: adminHeaders(),
-      body: JSON.stringify(patch),
+      body: JSON.stringify({
+        ...patch,
+        changeSummary: reviewNote.trim() || fallbackNote,
+      }),
     });
     const data = (await response.json()) as { tool?: McpTool; error?: string };
     if (!response.ok) {
@@ -212,6 +216,23 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           onChange={(event) => setAdminToken(event.target.value)}
           placeholder="Paste token for imports and edits"
           className="h-10 min-w-72 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+        />
+      </section>
+
+      <section className="grid gap-3 rounded-lg border border-[var(--arena-line)] bg-white p-4 sm:grid-cols-[1fr_420px]">
+        <div>
+          <div className="text-sm font-semibold">Evidence change note</div>
+          <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
+            This note is captured in review history when status, trust score, confidence, or review timestamp changes.
+          </p>
+        </div>
+        <textarea
+          value={reviewNote}
+          onChange={(event) => setReviewNote(event.target.value)}
+          rows={3}
+          maxLength={280}
+          placeholder="Example: Raised confidence after source and package provenance review."
+          className="w-full rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-sm"
         />
       </section>
 
@@ -457,7 +478,9 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                   <td className="px-4 py-4">
                     <select
                       value={tool.status}
-                      onChange={(event) => void patchTool(tool.slug, { status: event.target.value as ToolStatus })}
+                      onChange={(event) =>
+                        void patchTool(tool.slug, { status: event.target.value as ToolStatus }, "Status changed in admin review.")
+                      }
                       className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm"
                     >
                       <option value="unreviewed">Unreviewed</option>
@@ -472,7 +495,9 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                       min="0"
                       max="100"
                       defaultValue={tool.trustScore ?? ""}
-                      onBlur={(event) => void patchTool(tool.slug, { trust_score: event.target.value })}
+                      onBlur={(event) =>
+                        void patchTool(tool.slug, { trust_score: event.target.value }, "Trust score adjusted in admin review.")
+                      }
                       className="h-9 w-20 rounded-md border border-[var(--arena-line)] bg-white px-2 font-mono text-sm"
                     />
                   </td>
@@ -480,7 +505,11 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                     <select
                       value={tool.confidenceScore}
                       onChange={(event) =>
-                        void patchTool(tool.slug, { confidenceScore: event.target.value as ConfidenceScore })
+                        void patchTool(
+                          tool.slug,
+                          { confidenceScore: event.target.value as ConfidenceScore },
+                          "Confidence changed in admin review.",
+                        )
                       }
                       className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm"
                     >
@@ -494,12 +523,16 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                     <button
                       type="button"
                       onClick={() =>
-                        void patchTool(tool.slug, {
-                          status: "reviewed",
-                          lastReviewedAt: new Date().toISOString(),
-                          confidenceScore:
-                            tool.confidenceScore === "unreviewed" ? "low" : tool.confidenceScore,
-                        })
+                        void patchTool(
+                          tool.slug,
+                          {
+                            status: "reviewed",
+                            lastReviewedAt: new Date().toISOString(),
+                            confidenceScore:
+                              tool.confidenceScore === "unreviewed" ? "low" : tool.confidenceScore,
+                          },
+                          "Marked reviewed in admin review.",
+                        )
                       }
                       className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-semibold"
                     >
@@ -519,7 +552,13 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                       </button>
                       <button
                         type="button"
-                        onClick={() => void patchTool(tool.slug, { lastReviewedAt: new Date().toISOString() })}
+                        onClick={() =>
+                          void patchTool(
+                            tool.slug,
+                            { lastReviewedAt: new Date().toISOString() },
+                            "Review timestamp stamped in admin.",
+                          )
+                        }
                         className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-semibold"
                       >
                         <Save size={15} aria-hidden="true" />

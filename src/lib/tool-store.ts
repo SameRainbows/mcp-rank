@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { createMcpToolSnapshot } from "./review-snapshots";
 import { servers } from "./sample-data";
 import { isTrustedRankable, packageUrlFor } from "./server-derived";
 import type { ConfidenceScore, McpTool, McpToolInput, ToolStatus } from "./tool-types";
@@ -111,6 +112,15 @@ export function normalizeToolInput(input: McpToolInput): McpTool {
     lastReviewedAt: String(input.lastReviewedAt ?? input.last_reviewed_at ?? "") || null,
     enrichment: input.enrichment ?? {},
   };
+}
+
+function hasReviewChange(before: McpTool, after: McpTool) {
+  return (
+    before.status !== after.status ||
+    before.trustScore !== after.trustScore ||
+    before.confidenceScore !== after.confidenceScore ||
+    before.lastReviewedAt !== after.lastReviewedAt
+  );
 }
 
 const seedTools: McpTool[] = servers.map((server) =>
@@ -284,11 +294,21 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
   return { persisted: true, count: tools.length, tools };
 }
 
-export async function patchMcpTool(slug: string, input: McpToolInput) {
+export async function patchMcpTool(
+  slug: string,
+  input: McpToolInput,
+  options: { changeSummary?: string; source?: string } = {},
+) {
   const existing = (await listMcpTools("all")).find((tool) => tool.slug === slug);
   if (!existing) return null;
   const merged = normalizeToolInput({ ...existing, ...input, slug });
   await upsertMcpTools([merged]);
+  if (hasReviewChange(existing, merged)) {
+    await createMcpToolSnapshot(existing, merged, {
+      changeSummary: options.changeSummary,
+      source: options.source ?? "admin",
+    });
+  }
   return merged;
 }
 

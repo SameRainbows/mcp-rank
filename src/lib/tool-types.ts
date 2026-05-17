@@ -39,6 +39,9 @@ export type McpToolInput = Partial<McpTool> & {
   last_reviewed_at?: string | null;
   open_issues?: number | string | null;
   readme_length?: number | string | null;
+  changeSummary?: string;
+  review_note?: string;
+  snapshotSource?: string;
 };
 
 export type ImportedMcpToolRecord = {

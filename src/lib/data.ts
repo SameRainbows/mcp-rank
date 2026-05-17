@@ -138,13 +138,14 @@ function mapToolToServer(tool: McpTool): McpServer {
   const status = toolStatusToServerStatus(tool);
   const confidence = toolConfidenceToServerConfidence(tool);
   const packageName = packageNameFromUrl(tool.packageUrl);
+  const trustScore = tool.trustScore ?? 0;
   const score = {
-    installDocs: 0,
-    maintenance: 0,
-    auth: 0,
-    compatibility: 0,
-    usefulness: 0,
-    safety: 0,
+    installDocs: trustScore,
+    maintenance: trustScore,
+    auth: trustScore,
+    compatibility: trustScore,
+    usefulness: trustScore,
+    safety: trustScore,
   };
 
   return {

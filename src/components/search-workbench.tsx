@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { confidenceLabel, isRankable, reviewDepthLabel } from "@/lib/server-derived";
@@ -14,6 +14,8 @@ type SearchWorkbenchProps = {
 
 export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   const [query, setQuery] = useState("");
+  const [searchServers, setSearchServers] = useState(servers);
+  const [isLoading, setIsLoading] = useState(false);
   const [client, setClient] = useState<ClientKey | "all">("all");
   const [risk, setRisk] = useState<RiskLevel | "all">("all");
   const [sourceEvidence, setSourceEvidence] = useState<"all" | "ready" | "needs">("all");
@@ -38,7 +40,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
       return Boolean(server.packageName || server.repositoryUrl || server.sourceLinks.some((link) => link.url));
     };
 
-    return servers
+    return searchServers
       .filter((server) => {
         const text = `${server.name} ${server.category} ${server.tagline} ${server.signals.join(" ")}`.toLowerCase();
         const needsSourceEvidence = server.status === "indexed" && !hasSourceEvidence(server);
@@ -61,7 +63,32 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           overallScore(b.score) - overallScore(a.score) ||
           a.name.localeCompare(b.name),
       );
-  }, [client, query, reviewDepth, risk, servers, sourceEvidence]);
+  }, [client, query, reviewDepth, risk, searchServers, sourceEvidence]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/search/servers?query=${encodeURIComponent(query)}&limit=200`, {
+          signal: controller.signal,
+        });
+        if (response.ok) {
+          const data = (await response.json()) as { servers?: McpServer[] };
+          setSearchServers(Array.isArray(data.servers) ? data.servers : servers);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) setSearchServers(servers);
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [query, servers]);
 
   return (
     <section className="rounded-xl border border-[var(--arena-line)] bg-white shadow-[0_10px_35px_rgba(33,29,24,0.05)]">
@@ -124,6 +151,9 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
             <option value="needs">Needs source evidence</option>
           </select>
         </div>
+        <p className="mt-3 text-xs font-semibold text-[var(--arena-muted)]">
+          {isLoading ? "Searching indexed evidence..." : `Showing ${results.length} matching records from the indexed evidence set.`}
+        </p>
       </div>
 
       <div className="divide-y divide-[var(--arena-line)]">

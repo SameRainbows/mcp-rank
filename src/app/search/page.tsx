@@ -4,7 +4,7 @@ import { ArenaShell } from "@/components/arena-shell";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { SearchWorkbench } from "@/components/search-workbench";
 import { SubmitServerLink } from "@/components/submit-server-link";
-import { getServers } from "@/lib/data";
+import { getSearchServers } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SearchPage() {
-  const servers = await getServers();
+  const servers = await getSearchServers("", 200);
 
   return (
     <ArenaShell mode="Search">

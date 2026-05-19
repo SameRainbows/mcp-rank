@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { servers, weeklyReports } from "./sample-data";
 import { overallScore } from "./scoring";
-import { listMcpTools } from "./tool-store";
+import { listMcpTools, searchMcpTools } from "./tool-store";
 import { packageNameFromUrl } from "./import-normalization";
 import type { ConfidenceLevel, McpServer, ReviewDepth, ReviewStatus, SourceLink, WeeklyReport } from "./types";
 import type { McpTool } from "./tool-types";
@@ -165,7 +165,7 @@ function toolConfidenceToServerConfidence(tool: McpTool): ConfidenceLevel {
   return "low";
 }
 
-function mapToolToServer(tool: McpTool): McpServer {
+export function mapToolToServer(tool: McpTool): McpServer {
   const importedAt = typeof tool.enrichment?.importedAt === "string" ? tool.enrichment.importedAt.slice(0, 10) : "";
   const lastSeenAt = typeof tool.enrichment?.lastSeenAt === "string" ? tool.enrichment.lastSeenAt.slice(0, 10) : importedAt;
   const sourceKind = typeof tool.enrichment?.sourceKind === "string" ? tool.enrichment.sourceKind : "public source";
@@ -273,6 +273,22 @@ export async function getServers(): Promise<McpServer[]> {
 export async function getServer(slug: string) {
   const allServers = await getServers();
   return allServers.find((server) => server.slug === slug);
+}
+
+export async function getSearchServers(query = "", limit = 200): Promise<McpServer[]> {
+  const normalizedQuery = query.trim().toLowerCase();
+  const seedMatches = servers.filter((server) => {
+    if (!normalizedQuery) return true;
+    return `${server.name} ${server.category} ${server.tagline} ${server.signals.join(" ")}`.toLowerCase().includes(normalizedQuery);
+  });
+  const toolMatches = await searchMcpTools(query, limit);
+  const merged = new Map(seedMatches.map((server) => [server.slug, server]));
+
+  for (const tool of toolMatches) {
+    if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
+  }
+
+  return [...merged.values()].slice(0, limit);
 }
 
 export async function getWeeklyReports(): Promise<WeeklyReport[]> {

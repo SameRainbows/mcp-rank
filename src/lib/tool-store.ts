@@ -216,6 +216,70 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
   return rows.map(rowToTool);
 }
 
+export async function searchMcpTools(query = "", limit = 200) {
+  const safeLimit = Math.max(1, Math.min(limit, 300));
+  const normalizedQuery = query.trim().toLowerCase();
+  const sql = getSql();
+
+  if (!sql) {
+    const tools = [...memoryTools.values()];
+    return tools
+      .filter((tool) => {
+        if (!normalizedQuery) return true;
+        return `${tool.name} ${tool.description} ${tool.category} ${tool.source}`.toLowerCase().includes(normalizedQuery);
+      })
+      .slice(0, safeLimit);
+  }
+
+  await ensureToolSchema(sql);
+
+  const pattern = `%${normalizedQuery}%`;
+  const rows = normalizedQuery
+    ? ((await sql`
+        select name, slug, description, category, source, source_url, github_url, package_url,
+          install_command, stars, last_commit::text, license, status, review_depth, trust_score,
+          confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
+        from mcp_tools
+        where lower(name) like ${pattern}
+           or lower(description) like ${pattern}
+           or lower(category) like ${pattern}
+           or lower(source) like ${pattern}
+           or lower(slug) like ${pattern}
+        order by
+          case review_depth
+            when 'maintainer_verified' then 0
+            when 'deep_review' then 1
+            when 'install_tested' then 2
+            when 'source_reviewed' then 3
+            else 4
+          end,
+          case confidence_score when 'high' then 0 when 'medium' then 1 when 'low' then 2 else 3 end,
+          coalesce(trust_score, -1) desc,
+          name asc
+        limit ${safeLimit}
+      `) as ToolRow[])
+    : ((await sql`
+        select name, slug, description, category, source, source_url, github_url, package_url,
+          install_command, stars, last_commit::text, license, status, review_depth, trust_score,
+          confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
+        from mcp_tools
+        order by
+          case review_depth
+            when 'maintainer_verified' then 0
+            when 'deep_review' then 1
+            when 'install_tested' then 2
+            when 'source_reviewed' then 3
+            else 4
+          end,
+          case confidence_score when 'high' then 0 when 'medium' then 1 when 'low' then 2 else 3 end,
+          coalesce(trust_score, -1) desc,
+          name asc
+        limit ${safeLimit}
+      `) as ToolRow[]);
+
+  return rows.map(rowToTool);
+}
+
 export async function listTopSafeMcpTools(limit = 10) {
   const sql = getSql();
   if (!sql) {

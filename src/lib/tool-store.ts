@@ -349,9 +349,8 @@ export async function listPublicMcpTools(status?: "reviewed" | "unreviewed" | "a
 }
 
 export async function listTopSafeMcpTools(limit = 10) {
-  const sql = getSql();
-  if (!sql) {
-    return [...memoryTools.values()]
+  const fallback = () =>
+    [...memoryTools.values()]
       .filter(
         (tool) =>
           tool.status === "reviewed" &&
@@ -364,11 +363,16 @@ export async function listTopSafeMcpTools(limit = 10) {
       })
       .sort((a, b) => (b.trustScore ?? -1) - (a.trustScore ?? -1))
       .slice(0, limit);
+
+  const sql = getSql();
+  if (!sql) {
+    return fallback();
   }
 
-  await ensureToolSchema(sql);
+  try {
+    await ensureToolSchema(sql);
 
-  const rows = (await sql`
+    const rows = (await sql`
     select name, slug, description, category, source, source_url, github_url, package_url,
       install_command, stars, last_commit::text, license, status, review_depth, trust_score,
       confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
@@ -380,12 +384,16 @@ export async function listTopSafeMcpTools(limit = 10) {
     limit ${limit}
   `) as ToolRow[];
 
-  return rows
-    .map(rowToTool)
-    .filter((tool) => {
-      const server = servers.find((item) => item.slug === tool.slug);
-      return Boolean(server && isTrustedRankable(server));
-    });
+    return rows
+      .map(rowToTool)
+      .filter((tool) => {
+        const server = servers.find((item) => item.slug === tool.slug);
+        return Boolean(server && isTrustedRankable(server));
+      });
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    return fallback();
+  }
 }
 
 export async function upsertMcpTools(inputs: McpToolInput[]) {

@@ -1,6 +1,7 @@
 import { getServer, getServers, getWeeklyReport } from "./data";
 import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewDepthLabel, reviewStatusLabel, serverPath } from "./server-derived";
 import { overallScore, scoreLabels, scoreWeights } from "./scoring";
+import { getStaticGlamaManifest } from "./static-glama-index";
 import { listTopSafeMcpTools } from "./tool-store";
 import type { ClientKey, McpServer, RiskLevel } from "./types";
 
@@ -112,6 +113,18 @@ export const mcpChatToolDefinitions: ChatToolDefinition[] = [
     function: {
       name: "get_weekly_report",
       description: "Get the current weekly Best MCP Service report, winner, and watch list.",
+      parameters: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_index_stats",
+      description: "Get MCP Rank indexed discovery coverage counts, including static Glama shard counts.",
       parameters: {
         type: "object",
         properties: {},
@@ -312,6 +325,22 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
     };
   }
 
+  if (name === "get_index_stats") {
+    const manifest = getStaticGlamaManifest();
+    const servers = await getServers();
+    const rankableCount = servers.filter(isRankable).length;
+
+    return {
+      staticGlamaIndexedRecords: manifest?.count ?? 0,
+      staticGlamaFetchedRecords: manifest?.fetched ?? 0,
+      staticGlamaDuplicates: manifest?.duplicates ?? 0,
+      staticGlamaGeneratedAt: manifest?.generatedAt ?? null,
+      reviewedOrRankableServers: rankableCount,
+      note:
+        "Static Glama records are indexed discovery records only. They are not MCP Rank reviews and are excluded from leaderboards until reviewed.",
+    };
+  }
+
   if (name === "list_top_safe_tools") {
     const limit = clampLimit(args.limit, 10);
     const tools = await listTopSafeMcpTools(limit);
@@ -337,6 +366,15 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
 
 export async function buildLocalMcpArenaAnswer(prompt: string) {
   const query = prompt.toLowerCase();
+
+  if (
+    query.includes("how many") &&
+    (query.includes("indexed") || query.includes("index")) &&
+    query.includes("server")
+  ) {
+    const stats = (await executeMcpChatTool("get_index_stats", {})) as Record<string, unknown>;
+    return `MCP Rank currently has ${stats.staticGlamaIndexedRecords} static Glama indexed discovery records from ${stats.staticGlamaFetchedRecords} fetched Glama records.\n\nThese are indexed-only discovery records, not MCP Rank reviews. Reviewed/rankable servers are kept separate and only Deep Review or Maintainer Verified entries are eligible for leaderboards.`;
+  }
 
   if (query.includes("slack")) {
     const review = (await executeMcpChatTool("get_server_review", { server: "slack" })) as Record<string, unknown>;

@@ -41,4 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# import cursors/state
+scripts/.glama-import-state*.json
+
 .vercel

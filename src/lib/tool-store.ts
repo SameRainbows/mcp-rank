@@ -190,6 +190,10 @@ function isRecoverableDatabaseError(error: unknown) {
   return error instanceof Error && /exceeded the data transfer quota|HTTP status 402|DATABASE_URL/i.test(error.message);
 }
 
+function isIndexedGlamaTool(tool: McpTool) {
+  return tool.source.toLowerCase() === "glama" && tool.status === "unreviewed" && tool.reviewDepth === "indexed";
+}
+
 export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
   const sql = getSql();
   if (!sql) {
@@ -234,6 +238,7 @@ export async function searchMcpTools(query = "", limit = 200) {
   if (!sql) {
     const tools = [...memoryTools.values()];
     return tools
+      .filter((tool) => !isIndexedGlamaTool(tool))
       .filter((tool) => {
         if (!normalizedQuery) return true;
         return `${tool.name} ${tool.description} ${tool.category} ${tool.source}`.toLowerCase().includes(normalizedQuery);
@@ -251,11 +256,14 @@ export async function searchMcpTools(query = "", limit = 200) {
           install_command, stars, last_commit::text, license, status, review_depth, trust_score,
           confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
         from mcp_tools
-        where lower(name) like ${pattern}
-           or lower(description) like ${pattern}
-           or lower(category) like ${pattern}
-           or lower(source) like ${pattern}
-           or lower(slug) like ${pattern}
+        where not (lower(source) = 'glama' and status = 'unreviewed' and review_depth = 'indexed')
+          and (
+            lower(name) like ${pattern}
+            or lower(description) like ${pattern}
+            or lower(category) like ${pattern}
+            or lower(source) like ${pattern}
+            or lower(slug) like ${pattern}
+          )
         order by
           case review_depth
             when 'maintainer_verified' then 0
@@ -274,6 +282,7 @@ export async function searchMcpTools(query = "", limit = 200) {
           install_command, stars, last_commit::text, license, status, review_depth, trust_score,
           confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
         from mcp_tools
+        where not (lower(source) = 'glama' and status = 'unreviewed' and review_depth = 'indexed')
         order by
           case review_depth
             when 'maintainer_verified' then 0
@@ -293,11 +302,49 @@ export async function searchMcpTools(query = "", limit = 200) {
     if (!isRecoverableDatabaseError(error)) throw error;
     const tools = [...memoryTools.values()];
     return tools
+      .filter((tool) => !isIndexedGlamaTool(tool))
       .filter((tool) => {
         if (!normalizedQuery) return true;
         return `${tool.name} ${tool.description} ${tool.category} ${tool.source}`.toLowerCase().includes(normalizedQuery);
       })
       .slice(0, safeLimit);
+  }
+}
+
+export async function listPublicMcpTools(status?: "reviewed" | "unreviewed" | "all") {
+  const sql = getSql();
+  if (!sql) {
+    const tools = [...memoryTools.values()].filter((tool) => !isIndexedGlamaTool(tool));
+    return status && status !== "all" ? tools.filter((tool) => tool.status === status) : tools;
+  }
+
+  try {
+    await ensureToolSchema(sql);
+    const rows =
+      status && status !== "all"
+        ? ((await sql`
+          select name, slug, description, category, source, source_url, github_url, package_url,
+            install_command, stars, last_commit::text, license, status, review_depth, trust_score,
+            confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
+          from mcp_tools
+          where status = ${status}
+            and not (lower(source) = 'glama' and status = 'unreviewed' and review_depth = 'indexed')
+          order by coalesce(trust_score, -1) desc, name asc
+        `) as ToolRow[])
+        : ((await sql`
+          select name, slug, description, category, source, source_url, github_url, package_url,
+            install_command, stars, last_commit::text, license, status, review_depth, trust_score,
+            confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
+          from mcp_tools
+          where not (lower(source) = 'glama' and status = 'unreviewed' and review_depth = 'indexed')
+          order by coalesce(trust_score, -1) desc, name asc
+        `) as ToolRow[]);
+
+    return rows.map(rowToTool);
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    const tools = [...memoryTools.values()].filter((tool) => !isIndexedGlamaTool(tool));
+    return status && status !== "all" ? tools.filter((tool) => tool.status === status) : tools;
   }
 }
 

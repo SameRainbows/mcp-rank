@@ -15,6 +15,7 @@ MCP server.
 - Weekly report pages at `/reports/weekly-best-mcp-service`
 - Scoring methodology at `/methodology`
 - Neon Postgres schema in `db/schema.sql`
+- Static Glama discovery shards in `public/indexes/glama/`
 - Vercel Cron job at `/api/cron/refresh-stars`
 - Server-side Azure AI chat endpoint at `/api/chat`
 
@@ -28,6 +29,24 @@ signals and preserve review history, not overwrite judgment.
 The canonical import table is `mcp_tools`. It separates `trust_score` from
 `confidence_score`, so a promising but weakly evidenced tool can remain visible
 without being promoted into high-confidence safety rankings.
+
+## Data Architecture
+
+MCP Rank uses a hybrid data model:
+
+- Neon/Postgres is for valuable reviewed/admin data: Deep Review, Maintainer Verified, Source Reviewed, Install Tested, admin review workflow, and evidence history.
+- Static JSON shards are for broad Glama indexed-only discovery coverage.
+- Local seed data in `src/lib/sample-data.ts` remains the fallback when `DATABASE_URL` is absent or Neon is unavailable.
+
+Glama indexed records are discovery data, not MCP Rank trust data. They must stay `Indexed`, low confidence, unranked, and excluded from Top Trusted/Safest surfaces until MCP Rank review promotes them.
+
+Generate the static Glama index before deployment when broad discovery coverage needs refreshing:
+
+```bash
+npm run index:glama
+```
+
+This fetches Glama with `first=100`, follows `pageInfo.endCursor`, deduplicates records, and writes compact shards to `public/indexes/glama/`. Do not use Neon as the default storage for 18k+ indexed-only Glama rows on the free plan.
 
 ## Admin import flow
 
@@ -47,6 +66,16 @@ npm install
 npm run dev
 ```
 
+Useful maintenance scripts:
+
+```bash
+npm run schema:apply
+npm run index:glama
+npm run import:glama:db
+```
+
+`import:glama:db` is retained for controlled database imports, but the public broad Glama discovery path should use `index:glama` static shards.
+
 Optional environment variables:
 
 ```bash
@@ -62,7 +91,7 @@ AZURE_AI_API_KEY=rotated_server_side_key
 ```
 
 If `DATABASE_URL` is not set, the app uses the local seed dataset in
-`src/lib/sample-data.ts`.
+`src/lib/sample-data.ts`. Static Glama shards still work without Neon.
 
 The chat key must be rotated before use if it was ever pasted into a chat,
 ticket, or document. Store it only in `.env.local` and Vercel environment
@@ -70,5 +99,4 @@ variables; never expose it through `NEXT_PUBLIC_` variables.
 
 ## Deployment
 
-The app is configured for Vercel. Create a Neon database, apply `db/schema.sql`,
-set `DATABASE_URL`, and deploy. Vercel Cron refreshes GitHub stars once per day.
+The app is configured for Vercel. For reviewed/admin persistence, create a Neon database, apply `db/schema.sql`, set `DATABASE_URL`, and deploy. For broad Glama discovery, run `npm run index:glama` and deploy the generated static shards. Vercel Cron refreshes GitHub stars once per day.

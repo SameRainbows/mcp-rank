@@ -45,7 +45,7 @@ export default async function ServerPage({ params }: PageProps) {
 
   const total = overallScore(server.score);
   const sourceLinks = sourceLinksFor(server);
-  const reviewSnapshots = await listReviewSnapshots(server.slug, server);
+  const reviewSnapshots = server.status === "indexed" ? [] : await listReviewSnapshots(server.slug, server);
 
   if (server.status === "indexed") {
     return (
@@ -98,7 +98,11 @@ export default async function ServerPage({ params }: PageProps) {
               <div className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)]">
                 <div className="flex gap-3">
                   <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />
-                  <span>Indexed from public MCP sources. Not yet reviewed by MCP Rank.</span>
+                  <span>
+                    {server.sourceProvider === "Glama"
+                      ? "Indexed from Glama/public MCP sources. Not yet reviewed by MCP Rank."
+                      : "Indexed from public MCP sources. Not yet reviewed by MCP Rank."}
+                  </span>
                 </div>
                 <div className="flex gap-3">
                   <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />
@@ -108,6 +112,12 @@ export default async function ServerPage({ params }: PageProps) {
                   <CheckCircle2 className="mt-1 shrink-0 text-[var(--arena-green)]" size={17} />
                   <span>Submit maintainer evidence, install docs, package links, auth details, or risk notes to help review this listing.</span>
                 </div>
+                {server.signals.slice(0, 4).map((signal) => (
+                  <div key={signal} className="flex gap-3">
+                    <CheckCircle2 className="mt-1 shrink-0 text-[var(--arena-green)]" size={17} />
+                    <span>{signal}</span>
+                  </div>
+                ))}
               </div>
             </div>
 

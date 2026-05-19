@@ -77,7 +77,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           const data = (await response.json()) as { servers?: McpServer[] };
           setSearchServers(Array.isArray(data.servers) ? data.servers : servers);
         }
-      } catch (error) {
+      } catch {
         if (!controller.signal.aborted) setSearchServers(servers);
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -176,7 +176,9 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
               <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
               {!isRankable(server) && (
                 <p className="mt-2 text-xs font-semibold text-[var(--arena-muted)]">
-                  {reviewDepthLabel(server)} listings are visible for discovery but excluded from public leaderboards.
+                  {server.sourceProvider === "Glama" && server.reviewDepth === "indexed"
+                    ? "Indexed from Glama/public MCP source. Not yet reviewed by MCP Rank."
+                    : `${reviewDepthLabel(server)} listings are visible for discovery but excluded from public leaderboards.`}
                 </p>
               )}
               <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">

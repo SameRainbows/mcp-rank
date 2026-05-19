@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "schema:apply": "node scripts/apply-schema.mjs",
+    "index:glama": "node scripts/build-glama-static-index.mjs --full",
+    "import:glama:db": "node scripts/import-glama-servers.mjs --full"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

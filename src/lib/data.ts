@@ -1,7 +1,8 @@
 import { neon } from "@neondatabase/serverless";
 import { servers, weeklyReports } from "./sample-data";
 import { overallScore } from "./scoring";
-import { listMcpTools, searchMcpTools } from "./tool-store";
+import { listPublicMcpTools, searchMcpTools } from "./tool-store";
+import { getStaticGlamaServer, searchStaticGlamaServers } from "./static-glama-index";
 import { packageNameFromUrl } from "./import-normalization";
 import type { ConfidenceLevel, McpServer, ReviewDepth, ReviewStatus, SourceLink, WeeklyReport } from "./types";
 import type { McpTool } from "./tool-types";
@@ -241,7 +242,7 @@ export function mapToolToServer(tool: McpTool): McpServer {
 export async function getServers(): Promise<McpServer[]> {
   const sql = getSql();
   if (!sql) {
-    const adminTools = await listMcpTools("all");
+    const adminTools = await listPublicMcpTools("all");
     const merged = new Map(servers.map((server) => [server.slug, server]));
     for (const tool of adminTools) {
       if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
@@ -267,7 +268,7 @@ export async function getServers(): Promise<McpServer[]> {
       const mapped = mapServer(row, merged.get(row.slug));
       merged.set(mapped.slug, { ...(merged.get(mapped.slug) ?? mapped), ...mapped });
     }
-    const adminTools = await listMcpTools("all");
+    const adminTools = await listPublicMcpTools("all");
     for (const tool of adminTools) {
       if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
     }
@@ -281,7 +282,7 @@ export async function getServers(): Promise<McpServer[]> {
 
 export async function getServer(slug: string) {
   const allServers = await getServers();
-  return allServers.find((server) => server.slug === slug);
+  return allServers.find((server) => server.slug === slug) ?? getStaticGlamaServer(slug);
 }
 
 export async function getSearchServers(query = "", limit = 200): Promise<McpServer[]> {
@@ -295,6 +296,13 @@ export async function getSearchServers(query = "", limit = 200): Promise<McpServ
 
   for (const tool of toolMatches) {
     if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
+  }
+
+  const remaining = Math.max(0, limit - merged.size);
+  if (remaining > 0) {
+    for (const server of searchStaticGlamaServers(query, remaining)) {
+      if (!merged.has(server.slug)) merged.set(server.slug, server);
+    }
   }
 
   return [...merged.values()].slice(0, limit);

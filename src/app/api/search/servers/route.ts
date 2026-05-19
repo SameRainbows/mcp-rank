@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSearchServers } from "@/lib/data";
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query") ?? "";

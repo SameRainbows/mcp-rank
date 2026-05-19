@@ -1209,7 +1209,19 @@ const indexedSeeds: Array<{
   { slug: "simsense", name: "SimSense", category: "Infrastructure", tagline: "Deploy sims to any screen. Control your displays with Claude.", sourceUrl: "https://my.simsense.ai/mcp", risk: "medium", source: "Official MCP registry" },
 ];
 
-const lightweightReviewedSlugs = new Set([
+type SourceReviewFinding = {
+  confidence: ConfidenceLevel;
+  risk?: RiskLevel;
+  stars?: number;
+  openIssues?: number;
+  lastPushed?: string;
+  license?: string;
+  signals?: string[];
+  evidence: string[];
+  cautions: string[];
+};
+
+const sourceReviewBatchSlugs = new Set([
   "docs-mcp",
   "abmeter",
   "adeu",
@@ -1219,9 +1231,7 @@ const lightweightReviewedSlugs = new Set([
   "agenttrust-identity-trust-for-a2a-agents",
   "spotdb",
   "anki-mcp-server",
-  "ankimcp-server",
   "anomalyarmor",
-  "artidrop",
   "contextlayer-mcp",
   "computeback",
   "auxen",
@@ -1236,7 +1246,393 @@ const lightweightReviewedSlugs = new Set([
   "hapi-mcp-server",
   "mcp-registry-server",
   "exa",
+  "dreamlit",
 ]);
+
+const sourceReviewFindings: Record<string, SourceReviewFinding> = {
+  "docs-mcp": {
+    confidence: "medium",
+    stars: 103,
+    openIssues: 118,
+    lastPushed: "2026-05-19",
+    license: "NOASSERTION",
+    signals: ["Reachable GitHub repository", "Active recent push", "Docs-oriented capability surface"],
+    evidence: [
+      "GitHub repository frumu-ai/tandem was reachable during review with recent activity on 2026-05-19.",
+      "The listed MCP endpoint and repository support a documentation/setup helper interpretation rather than a high-privilege SaaS integration.",
+    ],
+    cautions: [
+      "Repository issue volume is high enough to require maintainer triage before a deeper recommendation.",
+      "Do not treat the docs label as a safety guarantee; verify what folder or workspace context the server can access.",
+    ],
+  },
+  abmeter: {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Registry source present", "Repository link unavailable at review time"],
+    evidence: [
+      "The official registry row includes a provider endpoint and GitHub URL.",
+      "The GitHub repository URL returned 404 during review, so source confidence is capped.",
+    ],
+    cautions: [
+      "Feature-flag and experiment systems can affect production behavior; require a maintainer claim and current source link before team rollout.",
+      "Do not promote beyond source-reviewed until repository provenance is repaired.",
+    ],
+  },
+  adeu: {
+    confidence: "medium",
+    stars: 78,
+    openIssues: 2,
+    lastPushed: "2026-05-19",
+    license: "MIT",
+    signals: ["Reachable repository", "MIT license", "Recent activity", "Document transformation surface"],
+    evidence: [
+      "GitHub repository dealfluence/adeu was reachable, MIT licensed, and recently updated on 2026-05-19.",
+      "The package/install path is concrete enough for a later sandbox install review.",
+    ],
+    cautions: [
+      "DOCX redlining may expose legal, sales, or customer documents; test with synthetic files first.",
+      "Source review does not verify tracked-change fidelity or local file handling.",
+    ],
+  },
+  "agentdm-agent-to-agent-communication-platform": {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Provider endpoint listed", "Repository link unavailable at review time"],
+    evidence: [
+      "The registry row describes an agent-to-agent messaging service with a provider MCP endpoint.",
+      "The listed GitHub repository returned 404 during review.",
+    ],
+    cautions: [
+      "Agent messaging can leak instructions, identity, and task context across systems; require scope and retention documentation.",
+      "Needs maintainer verification before any recommendation.",
+    ],
+  },
+  "agentic-news": {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Provider endpoint listed", "Repository link unavailable at review time", "News/search workflow"],
+    evidence: [
+      "The registry row describes news monitoring, briefings, and semantic search through a provider endpoint.",
+      "The listed GitHub repository returned 404 during review.",
+    ],
+    cautions: [
+      "News retrieval is lower sensitivity than workspace integrations, but source confidence is weak until the repo link is fixed.",
+      "Verify data sources, region coverage, and whether account credentials are required.",
+    ],
+  },
+  "agentic-shelf": {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Provider endpoint listed", "Repository link unavailable at review time", "Commerce/catalog surface"],
+    evidence: [
+      "The registry row describes a hosted commerce catalog MCP endpoint.",
+      "The listed GitHub repository returned 404 during review.",
+    ],
+    cautions: [
+      "Commerce catalog tools can influence purchase recommendations; verify data freshness and affiliate behavior.",
+      "Needs maintainer claim or working source repository before deeper review.",
+    ],
+  },
+  "agenttrust-identity-trust-for-a2a-agents": {
+    confidence: "medium",
+    risk: "high",
+    stars: 1,
+    openIssues: 0,
+    lastPushed: "2026-04-09",
+    license: "MIT",
+    signals: ["Reachable repository", "Identity/security category", "High-impact trust surface"],
+    evidence: [
+      "GitHub repository agenttrust/mcp-server was reachable, MIT licensed, and describes A2A identity, HITL escalation, and prompt-injection detection.",
+      "A package install command is listed, making this a candidate for a later sandbox install review.",
+    ],
+    cautions: [
+      "Identity and trust products require unusually strong evidence; low repository adoption keeps confidence at medium.",
+      "Do not rely on trust scoring claims without independent tests and maintainer verification.",
+    ],
+  },
+  spotdb: {
+    confidence: "medium",
+    risk: "high",
+    stars: 20,
+    openIssues: 11,
+    lastPushed: "2026-05-10",
+    license: "MIT",
+    signals: ["Reachable repository", "Container install path", "Data sandbox surface"],
+    evidence: [
+      "GitHub repository aliengiraffe/spotdb was reachable, MIT licensed, and recently active on 2026-05-10.",
+      "The container install path is concrete enough for a later isolated runtime review.",
+    ],
+    cautions: [
+      "Data sandbox tools can still process sensitive uploads; review persistence, logs, and export behavior.",
+      "High risk remains appropriate until container behavior and network access are tested.",
+    ],
+  },
+  "anki-mcp-server": {
+    confidence: "medium",
+    risk: "medium",
+    stars: 280,
+    openIssues: 1,
+    lastPushed: "2026-05-13",
+    license: "MIT",
+    signals: ["Reachable repository", "NPM package listed", "Local personal-data surface"],
+    evidence: [
+      "GitHub repository ankimcp/anki-mcp-server was reachable, MIT licensed, and active on 2026-05-13.",
+      "The server has a concrete NPM install path and a clear AnkiConnect use case.",
+    ],
+    cautions: [
+      "Flashcard collections can contain private study, work, or medical notes; start with a test Anki profile.",
+      "Verify whether tools can write/delete notes before enabling autonomous actions.",
+    ],
+  },
+  anomalyarmor: {
+    confidence: "medium",
+    risk: "medium",
+    stars: 1,
+    openIssues: 0,
+    lastPushed: "2026-04-22",
+    license: "MIT",
+    signals: ["Reachable repository", "Data observability surface", "Package listed"],
+    evidence: [
+      "GitHub repository anomalyarmor/agents was reachable, MIT licensed, and describes data observability MCP tools.",
+      "A PyPI-style install command is listed for follow-up sandbox validation.",
+    ],
+    cautions: [
+      "Observability tools may expose schema, lineage, alert, or incident data; scope credentials tightly.",
+      "Low public adoption means source review should not be treated as operational endorsement.",
+    ],
+  },
+  "contextlayer-mcp": {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Package listed", "Repository link unavailable at review time", "Personal context surface"],
+    evidence: [
+      "The registry row includes NPM package identifiers for a personal context manager.",
+      "The listed GitHub repository returned 404 during review.",
+    ],
+    cautions: [
+      "Personal context stores are sensitive by design; require clear retention, deletion, and local/remote storage docs.",
+      "Needs repaired source provenance before it should move beyond low confidence.",
+    ],
+  },
+  computeback: {
+    confidence: "medium",
+    risk: "medium",
+    stars: 0,
+    openIssues: 0,
+    lastPushed: "2026-05-12",
+    license: "MIT",
+    signals: ["Reachable repository", "NPM package listed", "Marketplace/payment-adjacent surface"],
+    evidence: [
+      "GitHub repository Autonomad1/computeback-mcp was reachable, MIT licensed, and active on 2026-05-12.",
+      "The listed package mirrors an agent rewards marketplace workflow.",
+    ],
+    cautions: [
+      "Marketplace and token reward flows need payment, identity, and abuse controls before production use.",
+      "Low repository adoption means maintainer outreach is a priority.",
+    ],
+  },
+  auxen: {
+    confidence: "medium",
+    risk: "medium",
+    stars: 0,
+    openIssues: 0,
+    lastPushed: "2026-05-13",
+    signals: ["Reachable repository", "Private AI endpoint provisioning surface"],
+    evidence: [
+      "GitHub repository auxen-ai/auxen-mcp was reachable and active on 2026-05-13.",
+      "The provider endpoint and repository describe AI model endpoint provisioning.",
+    ],
+    cautions: [
+      "Provisioning infrastructure can create cost and data-residency risk; require spend limits and tenant controls.",
+      "License and operational docs need review before deeper confidence.",
+    ],
+  },
+  baselight: {
+    confidence: "low",
+    risk: "high",
+    signals: ["Provider endpoint only", "Finance/data catalog surface"],
+    evidence: [
+      "The registry row lists a provider MCP endpoint for a large dataset catalog.",
+      "No repository or package source was available in the indexed metadata.",
+    ],
+    cautions: [
+      "Finance/data catalog claims need source, licensing, and freshness evidence.",
+      "Keep low confidence until maintainers provide source or docs for auth, rate limits, and data provenance.",
+    ],
+  },
+  borealhost: {
+    confidence: "medium",
+    risk: "high",
+    stars: 0,
+    openIssues: 0,
+    lastPushed: "2026-04-14",
+    signals: ["Reachable repository", "Hosting/DNS/domain management surface", "Package listed"],
+    evidence: [
+      "GitHub repository alainsvrd/borealhost-mcp was reachable and active on 2026-04-14.",
+      "The listed capability surface includes hosting, DNS, and domain operations.",
+    ],
+    cautions: [
+      "Hosting and DNS operations are high-impact; require read-only mode or explicit confirmation for mutations.",
+      "Needs maintainer verification and install testing before any trust recommendation.",
+    ],
+  },
+  "buywhere-mcp": {
+    confidence: "medium",
+    risk: "low",
+    stars: 3,
+    openIssues: 1,
+    lastPushed: "2026-05-08",
+    license: "MIT",
+    signals: ["Reachable repository", "NPM package listed", "Commerce search surface"],
+    evidence: [
+      "GitHub repository BuyWhere/buywhere-mcp was reachable, MIT licensed, and recently active on 2026-05-08.",
+      "The server has a concrete NPM package path for product search and price comparison.",
+    ],
+    cautions: [
+      "Commerce search can still include affiliate or ranking incentives; disclose data and monetization sources.",
+      "Verify whether any purchase or account actions exist before calling it low operational risk.",
+    ],
+  },
+  "buywhere-product-catalog": {
+    confidence: "medium",
+    risk: "medium",
+    stars: 0,
+    openIssues: 14,
+    lastPushed: "2026-05-19",
+    signals: ["Reachable repository", "Provider endpoint listed", "Large product catalog surface"],
+    evidence: [
+      "GitHub repository BuyWhere/buywhere was reachable and active on 2026-05-19.",
+      "The endpoint describes a large product catalog and price-comparison workflow.",
+    ],
+    cautions: [
+      "Catalog scale makes freshness, deduplication, and affiliate incentives important review questions.",
+      "Open issue volume should be checked before deeper promotion.",
+    ],
+  },
+  "byteray-ai": {
+    confidence: "low",
+    risk: "high",
+    signals: ["Provider endpoint only", "OAuth/SSO mentioned", "Security analysis surface"],
+    evidence: [
+      "The registry row lists a hosted endpoint and describes binary vulnerability analysis with OAuth/SSO.",
+      "No public repository or package source was available in the indexed metadata.",
+    ],
+    cautions: [
+      "Binary analysis can involve proprietary code and sensitive samples; require retention and isolation documentation.",
+      "High-risk hosted security tooling should not move past low confidence without maintainer evidence.",
+    ],
+  },
+  "china-marketing-ai-intelligence-mcp": {
+    confidence: "low",
+    risk: "medium",
+    signals: ["Provider endpoint only", "Marketing intelligence surface"],
+    evidence: [
+      "The registry row lists a provider endpoint for brand visibility and KOL discovery workflows.",
+      "No repository or package source was available in the indexed metadata.",
+    ],
+    cautions: [
+      "Marketing-intelligence data needs provenance, jurisdiction, and scraping-policy review.",
+      "Keep low confidence until source/docs and maintainer identity are verified.",
+    ],
+  },
+  "cirra-ai-salesforce-admin-mcp-server": {
+    confidence: "low",
+    risk: "high",
+    signals: ["Provider endpoint listed", "Repository link unavailable at review time", "Salesforce admin surface"],
+    evidence: [
+      "The registry row describes Salesforce administration and data-management capability.",
+      "The listed GitHub repository returned 404 during review.",
+    ],
+    cautions: [
+      "Salesforce admin tools are high-impact by default; require tenant scoping, read-only modes, and approval gates.",
+      "Do not promote until the source link is repaired and OAuth/tool scopes are documented.",
+    ],
+  },
+  "contabo-vps-mcp-server": {
+    confidence: "medium",
+    risk: "high",
+    stars: 8,
+    openIssues: 0,
+    lastPushed: "2026-02-28",
+    license: "MIT",
+    signals: ["Reachable HAPI repository", "Cloud provisioning surface", "Provider endpoint listed"],
+    evidence: [
+      "The linked HAPI repository was reachable, MIT licensed, and provides the wrapper pattern behind this server.",
+      "The capability surface is cloud/VPS provisioning, which is operationally high-impact even when source links exist.",
+    ],
+    cautions: [
+      "Provisioning servers need cost limits, API-key scoping, and explicit human approval for mutations.",
+      "The registry row points through a HAPI wrapper, so provider-specific tool behavior still needs install testing.",
+    ],
+  },
+  "hapi-mcp-server": {
+    confidence: "medium",
+    risk: "high",
+    stars: 8,
+    openIssues: 0,
+    lastPushed: "2026-02-28",
+    license: "MIT",
+    signals: ["Reachable repository", "Container install path", "OpenAPI-to-MCP adapter"],
+    evidence: [
+      "GitHub repository la-rebelion/hapimcp was reachable, MIT licensed, and describes an OpenAPI-to-MCP adapter.",
+      "The container install path is concrete enough for a later sandbox review.",
+    ],
+    cautions: [
+      "Generic API wrappers inherit the risk of every connected OpenAPI backend.",
+      "Classify generated tools by the downstream API, not only by the HAPI wrapper itself.",
+    ],
+  },
+  "mcp-registry-server": {
+    confidence: "high",
+    risk: "medium",
+    stars: 6836,
+    openIssues: 91,
+    lastPushed: "2026-05-19",
+    signals: ["Official registry repository", "High community visibility", "Active recent push"],
+    evidence: [
+      "GitHub repository modelcontextprotocol/registry was reachable, highly visible, and active on 2026-05-19.",
+      "The registry use case is directly relevant to MCP discovery and source provenance.",
+    ],
+    cautions: [
+      "The listed endpoint is separate from the repository itself, so endpoint ownership and deployment path still need verification.",
+      "Registry search should not be mistaken for trust scoring.",
+    ],
+  },
+  exa: {
+    confidence: "high",
+    risk: "low",
+    stars: 4446,
+    openIssues: 18,
+    lastPushed: "2026-05-17",
+    license: "MIT",
+    signals: ["Reachable repository", "High community visibility", "Web retrieval surface", "Active maintenance"],
+    evidence: [
+      "GitHub repository exa-labs/exa-mcp-server was reachable, MIT licensed, and active on 2026-05-17.",
+      "The capability surface is web search/crawling, which is useful while avoiding direct workspace, payment, or local-file privileges by default.",
+    ],
+    cautions: [
+      "Web retrieval can import prompt injection and untrusted content into agent context.",
+      "API-key handling, rate limits, and retrieval logging should be reviewed before team rollout.",
+    ],
+  },
+  dreamlit: {
+    confidence: "medium",
+    risk: "medium",
+    stars: 0,
+    openIssues: 0,
+    lastPushed: "2026-05-14",
+    signals: ["Reachable repository", "Notification/workflow surface", "Provider endpoint listed"],
+    evidence: [
+      "GitHub repository dreamlit-ai/dreamlit-mcp was reachable and active on 2026-05-14.",
+      "The registry row describes notification workflow creation and management.",
+    ],
+    cautions: [
+      "Notification workflow tools can create noisy or externally visible actions; require draft/approval controls.",
+      "License and auth behavior need follow-up before higher confidence.",
+    ],
+  },
+};
 
 function packageSource(name: string, installCommand = ""): SourceLink {
   if (installCommand.startsWith("uvx ")) {
@@ -1268,16 +1664,31 @@ function reviewedScore(base: number, risk: RiskLevel) {
 
 const reviewableLightweightSlugs = new Set(
   indexedSeeds
-    .filter((item) => lightweightReviewedSlugs.has(item.slug) && Boolean(item.repositoryUrl || item.packageName))
+    .filter((item) => sourceReviewBatchSlugs.has(item.slug))
     .map((item) => item.slug),
 );
 
 const lightweightReviewedServers = indexedSeeds
   .filter((item) => reviewableLightweightSlugs.has(item.slug))
   .map((item) => {
-    const risk = item.risk ?? "medium";
-    const base = risk === "high" ? 64 : risk === "medium" ? 71 : item.repositoryUrl ? 77 : 73;
-    const confidence: ConfidenceLevel = item.repositoryUrl || item.packageName ? "medium" : "low";
+    const finding = sourceReviewFindings[item.slug];
+    const risk = finding?.risk ?? item.risk ?? "medium";
+    const confidence: ConfidenceLevel = finding?.confidence ?? (item.repositoryUrl || item.packageName ? "medium" : "low");
+    const base =
+      confidence === "high"
+        ? risk === "high"
+          ? 70
+          : 83
+        : confidence === "medium"
+          ? risk === "high"
+            ? 66
+            : 76
+          : risk === "high"
+            ? 56
+            : 64;
+    const sourceReviewEvidence = finding?.evidence ?? [];
+    const sourceReviewCautions = finding?.cautions ?? [];
+    const sourceReviewSignals = finding?.signals ?? [];
 
     return server({
       slug: item.slug,
@@ -1294,9 +1705,9 @@ const lightweightReviewedServers = indexedSeeds
       packageName: item.packageName ?? "",
       installCommand: item.installCommand ?? "Review provider documentation before install",
       repositoryUrl: item.repositoryUrl ?? "",
-      stars: 0,
-      lastReviewed: "2026-05-15",
-      evidenceUpdated: "2026-05-15",
+      stars: finding?.stars ?? 0,
+      lastReviewed: "2026-05-19",
+      evidenceUpdated: "2026-05-19",
       status: "reviewed",
       reviewDepth: "source_reviewed",
       confidence,
@@ -1306,12 +1717,14 @@ const lightweightReviewedServers = indexedSeeds
       score: reviewedScore(base, risk),
       signals: [
         "Official registry listing source-reviewed",
+        ...sourceReviewSignals,
         ...(item.repositoryUrl ? ["Repository source link available"] : []),
         ...(item.packageName ? ["Install package or container identifier available"] : []),
         ...(item.sourceUrl ? ["Provider endpoint or docs URL available"] : []),
       ],
       evidence: [
-        "MCP Rank completed a source review on 2026-05-15 using official registry metadata and available public source links.",
+        "MCP Rank completed a source review on 2026-05-19 using official registry metadata, reachable source links, and repository/API metadata where available.",
+        ...sourceReviewEvidence,
         item.repositoryUrl
           ? "Repository provenance is directly linkable for follow-up maintainer and activity checks."
           : "No repository URL was available in the indexed metadata, so confidence is capped until maintainer/source provenance is verified.",
@@ -1321,6 +1734,7 @@ const lightweightReviewedServers = indexedSeeds
       ],
       cautions: [
         "This is a source review, not a deep review or full install-and-auth audit.",
+        ...sourceReviewCautions,
         risk === "high"
           ? "High-risk category: verify auth scopes, data access, and mutation behavior before production use."
           : "Verify install behavior and requested permissions in a sandbox before team rollout.",
@@ -1337,9 +1751,14 @@ const lightweightReviewedServers = indexedSeeds
       ],
       riskAnalysis: [
         "Current risk level is " + risk + " based on category, source metadata, and exposed capability surface.",
+        finding?.openIssues !== undefined ? "Repository metadata check found " + finding.openIssues + " open issues at review time." : "Open issue count was not available from public source metadata at review time.",
         "Confidence remains bounded by available public source links until install testing and maintainer verification are complete.",
       ],
       maintenanceNotes: [
+        finding?.lastPushed
+          ? "Public repository metadata showed recent activity timestamp " + finding.lastPushed + "."
+          : "No repository activity timestamp was available from public source metadata.",
+        finding?.license ? "Public repository license signal: " + finding.license + "." : "License signal was unavailable or not asserted in public metadata.",
         "Next review should check release cadence, package provenance, and whether the listed endpoint still matches registry metadata.",
       ],
     });
@@ -1382,6 +1801,69 @@ const indexedServers = remainingIndexedSeeds.map((item) =>
 export const servers: McpServer[] = [...reviewedServers, ...lightweightReviewedServers, ...indexedServers];
 
 export const weeklyReports: WeeklyReport[] = [
+  {
+    slug: "first-25-source-reviewed-mcp-servers",
+    title: "First 25 Source-Reviewed MCP Servers",
+    weekOf: "2026-05-19",
+    winnerSlug: "exa",
+    summary:
+      "MCP Rank's first serious source-review batch shows the real bottleneck in MCP trust: indexing is easy, but source provenance is uneven. EXA is the lead signal because it has active public source, strong adoption, a concrete provider endpoint, and a comparatively narrow web-retrieval risk surface.",
+    whyItWon: [
+      "EXA had one of the strongest evidence chains in the batch: reachable GitHub source, MIT license signal, recent activity, thousands of stars, and a clear web-search/crawling use case.",
+      "The batch deliberately keeps these 25 entries at Source Reviewed rather than Deep Review, because source links and registry metadata do not prove install behavior, auth scopes, retention, or maintainer identity.",
+      "The strongest near-term acquisition signal for MCP Rank is not that it lists 18,000+ servers; it is that it can separate usable evidence from weak registry rows before the ecosystem notices the difference.",
+    ],
+    watchList: [
+      "Several official-registry rows had repository URLs that returned 404 during review, including ABMeter, AgentDM, Agentic News, Agentic Shelf, Contextlayer, and Cirra.",
+      "Endpoint-only services such as Baselight, ByteRay, and China Marketing AI Intelligence remain low-confidence until maintainers provide source, docs, or claim evidence.",
+      "High-impact categories like Salesforce admin, hosting/DNS, binary security analysis, cloud provisioning, trust scoring, and data sandboxes should never be promoted from source review alone.",
+    ],
+    biggestRiskNote:
+      "The first 25 reviews found a credibility trap: a server can be in a public registry and still have missing source, broken repository links, unclear auth behavior, or high-impact mutation risk. MCP Rank should make that visible instead of smoothing it over.",
+    newlyReviewed: [
+      "EXA",
+      "MCP Registry Server",
+      "Docs MCP",
+      "Adeu",
+      "Anki MCP Server",
+      "Spotdb",
+      "AgentTrust",
+      "AnomalyArmor",
+      "BuyWhere MCP",
+      "BuyWhere Product Catalog",
+      "HAPI MCP Server",
+      "Contabo (VPS) MCP Server",
+      "Dreamlit",
+      "Auxen",
+      "BorealHost",
+      "Computeback",
+      "ABMeter",
+      "AgentDM",
+      "Agentic News",
+      "Agentic Shelf",
+      "Contextlayer MCP",
+      "Baselight",
+      "ByteRay AI",
+      "China Marketing AI Intelligence MCP",
+      "Cirra AI Salesforce Admin MCP Server",
+    ],
+    needsVerification: [
+      "ABMeter - listed repository returned 404 during review.",
+      "AgentDM - listed repository returned 404 during review.",
+      "Agentic News - listed repository returned 404 during review.",
+      "Agentic Shelf - listed repository returned 404 during review.",
+      "Contextlayer MCP - listed repository returned 404 during review.",
+      "Cirra AI Salesforce Admin MCP Server - high-impact Salesforce admin surface with broken repository provenance.",
+      "ByteRay AI - hosted security analysis endpoint needs source, retention, and auth evidence.",
+      "Baselight - finance/data catalog endpoint needs data provenance and licensing evidence.",
+    ],
+    changes: [
+      "Converted the first curated batch of 25 indexed services into Source Reviewed records with explicit confidence caps and cautions.",
+      "Added live source-review findings from GitHub/API metadata where available, including stars, issue counts, license signal, recent activity, and broken repository links.",
+      "Kept the batch out of leaderboards because Source Reviewed is discovery evidence, not an install-tested or maintainer-verified recommendation.",
+      "Created a maintainer outreach shortlist based on broken links, endpoint-only listings, and high-impact operational surfaces.",
+    ],
+  },
   {
     slug: "weekly-best-mcp-service",
     title: "MCP Trust Report: GitHub Leads, Filesystem Needs Scoping",

@@ -86,6 +86,7 @@ export type WeeklyReport = {
   watchList: string[];
   biggestRiskNote?: string;
   newlyIndexed?: string[];
+  newlyReviewed?: string[];
   needsVerification?: string[];
   changes?: string[];
 };

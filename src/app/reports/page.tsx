@@ -5,8 +5,8 @@ import { ArenaShell } from "@/components/arena-shell";
 import { getWeeklyReports } from "@/lib/data";
 
 export const metadata: Metadata = {
-  title: "Weekly MCP Trust Reports",
-  description: "Weekly MCP server quality, safety, confidence, and rollout reports.",
+  title: "MCP Trust Reports",
+  description: "MCP server quality, safety, confidence, and rollout reports.",
 };
 
 export default async function ReportsPage() {
@@ -15,10 +15,10 @@ export default async function ReportsPage() {
   return (
     <ArenaShell mode="Reports">
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="font-serif text-4xl font-semibold">Weekly MCP trust reports</h1>
+        <h1 className="font-serif text-4xl font-semibold">MCP trust reports</h1>
         <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">
-          Evidence-led weekly notes on which MCP servers are safest, most useful, and most
-          urgent to verify before installation. Each report is meant to be renewed as source
+          Evidence-led notes on which MCP servers are safest, most useful, and most urgent
+          to verify before installation. Each report is meant to be renewed as source
           evidence, maintainer verification, and risk signals change.
         </p>
         <p className="mt-3 text-sm font-semibold text-[var(--arena-green)]">

@@ -42,6 +42,9 @@ export default function AboutPage() {
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
             Indexed tools are discovery records, not recommendations. External source metadata may come from Glama, the official MCP Registry, Smithery, package registries, or maintainer-submitted links, but external scores or verification signals are not MCP Rank scores.
           </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            Maintainer Verified is only used when a maintainer has actually claimed or confirmed listing details. MCP Rank does not convert external verification badges into its own verification label.
+          </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/methodology" className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
               Read methodology

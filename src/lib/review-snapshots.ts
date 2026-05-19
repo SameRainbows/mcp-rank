@@ -140,7 +140,7 @@ function fallbackSeedSnapshot(server: McpServer): ReviewSnapshot | null {
     status: server.status,
     confidence: server.confidence,
     risk: server.risk,
-    changeSummary: server.maintainerVerified
+    changeSummary: server.maintainerVerified && server.maintainerVerifiedAt
       ? "Seed review includes maintainer verification and source-backed evidence."
       : "Initial MCP Rank review captured from the curated seed dataset.",
     source: "seed_review",
@@ -211,17 +211,23 @@ export async function createMcpToolSnapshot(
     return snapshot;
   }
 
-  await ensureSnapshotSchema(sql);
-  await sql`
-    insert into mcp_tool_snapshots (
-      tool_slug, score, overall_score, previous_overall_score, status,
-      confidence_score, risk, change_summary, source
-    ) values (
-      ${after.slug}, ${JSON.stringify(snapshot.score)}, ${snapshot.overallScore},
-      ${snapshot.previousOverallScore}, ${snapshot.status}, ${snapshot.confidence},
-      ${snapshot.risk}, ${snapshot.changeSummary}, ${snapshot.source}
-    )
-  `;
+  try {
+    await ensureSnapshotSchema(sql);
+    await sql`
+      insert into mcp_tool_snapshots (
+        tool_slug, score, overall_score, previous_overall_score, status,
+        confidence_score, risk, change_summary, source
+      ) values (
+        ${after.slug}, ${JSON.stringify(snapshot.score)}, ${snapshot.overallScore},
+        ${snapshot.previousOverallScore}, ${snapshot.status}, ${snapshot.confidence},
+        ${snapshot.risk}, ${snapshot.changeSummary}, ${snapshot.source}
+      )
+    `;
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    const existing = memorySnapshots.get(after.slug) ?? [];
+    memorySnapshots.set(after.slug, [snapshot, ...existing].slice(0, 25));
+  }
 
   return snapshot;
 }
@@ -243,7 +249,7 @@ export async function listReviewSnapshots(slug: string, server?: McpServer, limi
       order by captured_at desc
       limit ${limit}
     ` as unknown as Promise<ServerSnapshotRow[]>;
-  const toolRowsPromise = sql`
+    const toolRowsPromise = sql`
       select id, tool_slug, score, overall_score, previous_overall_score, status,
         confidence_score, risk, change_summary, source, captured_at::text
       from mcp_tool_snapshots

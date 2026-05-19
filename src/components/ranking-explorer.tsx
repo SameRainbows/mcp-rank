@@ -45,7 +45,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
         <div>
           <h2 className="font-serif text-3xl font-semibold">MCP Leaderboard</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
-            Ranked only after a Deep Review or Maintainer Verified review. Source Reviewed and Install Tested listings remain searchable, but are excluded from leaderboards.
+            Ranked only after a Deep Review or explicit Maintainer Verified review. Source Reviewed and Install Tested listings remain searchable, but are excluded from leaderboards.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">

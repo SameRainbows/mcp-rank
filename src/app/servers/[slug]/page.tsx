@@ -298,7 +298,7 @@ export default async function ServerPage({ params }: PageProps) {
                   <span>{reviewDepthLabel(server)} with {confidenceLabel(server).toLowerCase()} confidence.</span>
                 </div>
                 <p>
-                  Leaderboards include only Deep Review or Maintainer Verified entries. Source Reviewed and Install Tested pages remain visible for evaluation but are not ranked recommendations.
+                  Leaderboards include only Deep Review entries or listings with explicit maintainer confirmation evidence. Source Reviewed and Install Tested pages remain visible for evaluation but are not ranked recommendations.
                 </p>
               </div>
             </section>

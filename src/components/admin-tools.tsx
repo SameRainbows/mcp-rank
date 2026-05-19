@@ -27,6 +27,9 @@ const csvColumns = [
 ];
 
 type StatusFilter = "all" | "reviewed" | "unreviewed";
+type QueueSourceFilter = "all" | "glama" | "official" | "smithery" | "github" | "manual";
+type QueueEvidenceFilter = "all" | "github" | "package" | "missing_source";
+type QueueSort = "priority" | "stars" | "last_seen" | "name";
 
 type AdminToolsProps = {
   initialTools: McpTool[];
@@ -43,6 +46,11 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
   const [loading, setLoading] = useState(false);
   const [adminToken, setAdminToken] = useState(initialAdminToken);
   const [reviewNote, setReviewNote] = useState("");
+  const [evidenceLink, setEvidenceLink] = useState("");
+  const [riskValue, setRiskValue] = useState<"low" | "medium" | "high">("medium");
+  const [queueSource, setQueueSource] = useState<QueueSourceFilter>("all");
+  const [queueEvidence, setQueueEvidence] = useState<QueueEvidenceFilter>("all");
+  const [queueSort, setQueueSort] = useState<QueueSort>("priority");
   const [importProvider, setImportProvider] = useState<ImportSourceProvider>("official_registry");
   const [importLimit, setImportLimit] = useState(100);
   const [importQuery, setImportQuery] = useState("");
@@ -67,6 +75,60 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
 
   const reviewedCount = useMemo(() => tools.filter((tool) => tool.status === "reviewed").length, [tools]);
   const unreviewedCount = useMemo(() => tools.filter((tool) => tool.status === "unreviewed").length, [tools]);
+  function toolReviewState(tool: McpTool) {
+    const state = typeof tool.enrichment?.reviewQueueState === "string" ? tool.enrichment.reviewQueueState : "needs_review";
+    return state.replace(/_/g, " ");
+  }
+
+  function toolLastSeen(tool: McpTool) {
+    const value = tool.enrichment?.lastSeenAt ?? tool.enrichment?.importedAt ?? tool.lastReviewedAt;
+    return typeof value === "string" ? value : "";
+  }
+
+  function toolCount(tool: McpTool) {
+    const count = tool.enrichment?.toolCount;
+    return typeof count === "number" ? count : null;
+  }
+
+  function evidenceLinks(tool: McpTool) {
+    const links = Array.isArray(tool.enrichment?.evidenceLinks) ? tool.enrichment.evidenceLinks : [];
+    return links.filter((link): link is string => typeof link === "string" && link.length > 0);
+  }
+
+  function rawImportFor(tool: McpTool) {
+    const rawImports = tool.enrichment?.rawImports;
+    if (!rawImports || typeof rawImports !== "object") return null;
+    const providers = Object.keys(rawImports);
+    if (!providers.length) return null;
+    return JSON.stringify(rawImports, null, 2).slice(0, 1800);
+  }
+
+  function patchWithReviewMetadata(
+    tool: McpTool,
+    patch: McpToolInput,
+    fallbackNote: string,
+    extraEnrichment: Record<string, unknown> = {},
+  ) {
+    const nextEvidenceLinks = evidenceLink.trim()
+      ? Array.from(new Set([...evidenceLinks(tool), evidenceLink.trim()]))
+      : evidenceLinks(tool);
+
+    return patchTool(
+      tool.slug,
+      {
+        ...patch,
+        enrichment: {
+          ...(tool.enrichment ?? {}),
+          reviewNotes: reviewNote.trim() || tool.enrichment?.reviewNotes || "",
+          evidenceLinks: nextEvidenceLinks,
+          reviewRisk: riskValue,
+          ...extraEnrichment,
+        },
+      },
+      fallbackNote,
+    );
+  }
+
   const reviewQueue = useMemo(() => {
     function sourceQuality(tool: McpTool) {
       const source = `${tool.source} ${tool.sourceUrl}`.toLowerCase();
@@ -83,11 +145,34 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
       return 2;
     }
 
+    function matchesSource(tool: McpTool) {
+      const source = `${tool.source} ${tool.sourceUrl}`.toLowerCase();
+      if (queueSource === "all") return true;
+      if (queueSource === "github") return Boolean(tool.githubUrl || source.includes("github"));
+      return source.includes(queueSource);
+    }
+
+    function matchesEvidence(tool: McpTool) {
+      if (queueEvidence === "all") return true;
+      if (queueEvidence === "github") return Boolean(tool.githubUrl);
+      if (queueEvidence === "package") return Boolean(tool.packageUrl || tool.installCommand);
+      return !tool.githubUrl && !tool.packageUrl && !tool.sourceUrl;
+    }
+
+    function sortTools(a: McpTool, b: McpTool) {
+      if (queueSort === "stars") return (b.stars ?? -1) - (a.stars ?? -1) || a.name.localeCompare(b.name);
+      if (queueSort === "last_seen") return Date.parse(toolLastSeen(b) || "0") - Date.parse(toolLastSeen(a) || "0") || a.name.localeCompare(b.name);
+      if (queueSort === "name") return a.name.localeCompare(b.name);
+      return sourceQuality(a) - sourceQuality(b) || riskWeight(a) - riskWeight(b) || (b.stars ?? -1) - (a.stars ?? -1) || a.name.localeCompare(b.name);
+    }
+
     return tools
       .filter((tool) => tool.status === "unreviewed")
-      .sort((a, b) => sourceQuality(a) - sourceQuality(b) || riskWeight(a) - riskWeight(b) || a.name.localeCompare(b.name))
-      .slice(0, 12);
-  }, [tools]);
+      .filter(matchesSource)
+      .filter(matchesEvidence)
+      .sort(sortTools)
+      .slice(0, 24);
+  }, [queueEvidence, queueSort, queueSource, tools]);
 
   async function handleCsvUpload(file: File) {
     const text = await file.text();
@@ -179,7 +264,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           <h1 className="mt-3 font-serif text-4xl font-semibold">Admin import and review</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
             Import broadly as Indexed, then manually promote review depth only after MCP Rank review evidence exists.
-            Leaderboards only use Deep Review or Maintainer Verified rows.
+            Maintainer Verified is reserved for listings with explicit maintainer claim or confirmation evidence.
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
@@ -236,6 +321,23 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           placeholder="Example: Raised confidence after source and package provenance review."
           className="w-full rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-sm"
         />
+        <div className="sm:col-start-2 grid gap-2 sm:grid-cols-[1fr_140px]">
+          <input
+            value={evidenceLink}
+            onChange={(event) => setEvidenceLink(event.target.value)}
+            placeholder="Optional evidence URL to attach to review actions"
+            className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+          />
+          <select
+            value={riskValue}
+            onChange={(event) => setRiskValue(event.target.value as "low" | "medium" | "high")}
+            className="h-10 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
+          >
+            <option value="low">Low risk</option>
+            <option value="medium">Medium risk</option>
+            <option value="high">High risk</option>
+          </select>
+        </div>
       </section>
 
       <section className="grid gap-4 rounded-lg border border-[var(--arena-line)] bg-white p-5">
@@ -395,7 +497,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           <div>
             <h2 className="font-serif text-3xl font-semibold">Internal review queue</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
-              Prioritized by source quality, source evidence, category importance, and rough risk surface. Promotion to reviewed remains manual.
+              Filter imported/indexed records, attach evidence, and promote only when MCP Rank review evidence exists.
             </p>
           </div>
           <button
@@ -409,9 +511,53 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
             Load unreviewed
           </button>
         </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <label className="grid gap-1 text-xs font-semibold text-[var(--arena-muted)]">
+            Indexed source
+            <select
+              value={queueSource}
+              onChange={(event) => setQueueSource(event.target.value as QueueSourceFilter)}
+              className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm text-[var(--arena-ink)]"
+            >
+              <option value="all">All sources</option>
+              <option value="glama">Glama</option>
+              <option value="official">Official registry</option>
+              <option value="smithery">Smithery</option>
+              <option value="github">GitHub</option>
+              <option value="manual">Manual</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-[var(--arena-muted)]">
+            Evidence
+            <select
+              value={queueEvidence}
+              onChange={(event) => setQueueEvidence(event.target.value as QueueEvidenceFilter)}
+              className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm text-[var(--arena-ink)]"
+            >
+              <option value="all">All evidence states</option>
+              <option value="github">Has GitHub repo</option>
+              <option value="package">Has package/install</option>
+              <option value="missing_source">Needs source evidence</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-semibold text-[var(--arena-muted)]">
+            Sort
+            <select
+              value={queueSort}
+              onChange={(event) => setQueueSort(event.target.value as QueueSort)}
+              className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm text-[var(--arena-ink)]"
+            >
+              <option value="priority">Review priority</option>
+              <option value="stars">Stars/popularity</option>
+              <option value="last_seen">Last seen/imported</option>
+              <option value="name">Name</option>
+            </select>
+          </label>
+        </div>
         <div className="mt-5 grid gap-3 lg:grid-cols-3">
           {reviewQueue.map((tool) => {
             const needsSourceEvidence = !tool.githubUrl && !tool.packageUrl && !tool.sourceUrl;
+            const rawImport = rawImportFor(tool);
             return (
               <div key={tool.slug} className="rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -425,8 +571,64 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                 </div>
                 <p className="mt-3 line-clamp-2 text-xs leading-5 text-[var(--arena-muted)]">{tool.description}</p>
                 <div className="mt-3 grid gap-1 text-xs text-[var(--arena-muted)]">
+                  <span>Slug: <span className="font-mono">{tool.slug}</span></span>
                   <span>Source: {tool.source || "Manual/imported"}</span>
-                  <span>Repo: {tool.githubUrl ? "yes" : "pending"} · Package: {tool.packageUrl ? "yes" : "pending"}</span>
+                  <span>Repo: {tool.githubUrl ? "yes" : "pending"} · Package/install: {tool.packageUrl || tool.installCommand ? "yes" : "pending"}</span>
+                  <span>License: {tool.license || "pending"} · Tools: {toolCount(tool) ?? "unknown"}</span>
+                  <span>Stars: {tool.stars ?? "unknown"} · Last seen: {toolLastSeen(tool).slice(0, 10) || "unknown"}</span>
+                  <span className="capitalize">Queue state: {toolReviewState(tool)}</span>
+                  {tool.sourceUrl && <a href={tool.sourceUrl} className="truncate font-semibold text-[var(--arena-blue)]" target="_blank" rel="noreferrer">Source URL</a>}
+                  {tool.githubUrl && <a href={tool.githubUrl} className="truncate font-semibold text-[var(--arena-blue)]" target="_blank" rel="noreferrer">Repository URL</a>}
+                </div>
+                {rawImport && (
+                  <details className="mt-3 rounded-md border border-[var(--arena-line)] bg-white p-2 text-xs">
+                    <summary className="cursor-pointer font-semibold">Raw/imported metadata</summary>
+                    <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap text-[10px] leading-4 text-[var(--arena-muted)]">{rawImport}</pre>
+                  </details>
+                )}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void patchWithReviewMetadata(
+                        tool,
+                        { status: "reviewed", reviewDepth: "source_reviewed", confidenceScore: tool.confidenceScore === "unreviewed" ? "low" : tool.confidenceScore, lastReviewedAt: new Date().toISOString() },
+                        "Marked MCP Rank source reviewed from review queue.",
+                        { reviewQueueState: "mcp_rank_reviewed" },
+                      )
+                    }
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-xs font-semibold"
+                  >
+                    MCP Rank Reviewed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void patchWithReviewMetadata(
+                        tool,
+                        { status: "reviewed", reviewDepth: "deep_review", confidenceScore: "high", lastReviewedAt: new Date().toISOString() },
+                        "Promoted to Deep Review from review queue.",
+                        { reviewQueueState: "deep_review" },
+                      )
+                    }
+                    className="rounded-md bg-[var(--arena-ink)] px-3 py-2 text-xs font-semibold text-white"
+                  >
+                    Deep Review
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void patchWithReviewMetadata(
+                        tool,
+                        { status: "unreviewed", reviewDepth: "indexed", confidenceScore: "low" },
+                        "Marked needs more evidence in review queue.",
+                        { reviewQueueState: "needs_more_evidence" },
+                      )
+                    }
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-xs font-semibold"
+                  >
+                    Needs More Evidence
+                  </button>
                 </div>
               </div>
             );
@@ -507,7 +709,6 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                       <option value="source_reviewed">Source Reviewed</option>
                       <option value="install_tested">Install Tested</option>
                       <option value="deep_review">Deep Review</option>
-                      <option value="maintainer_verified">Maintainer Verified</option>
                     </select>
                   </td>
                   <td className="px-4 py-4">
@@ -544,8 +745,8 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                     <button
                       type="button"
                       onClick={() =>
-                        void patchTool(
-                          tool.slug,
+                        void patchWithReviewMetadata(
+                          tool,
                           {
                             status: "reviewed",
                             reviewDepth: tool.reviewDepth === "indexed" ? "source_reviewed" : tool.reviewDepth,
@@ -554,12 +755,32 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                               tool.confidenceScore === "unreviewed" ? "low" : tool.confidenceScore,
                           },
                           "Marked reviewed in admin review.",
+                          { reviewQueueState: "mcp_rank_reviewed" },
                         )
                       }
                       className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-semibold"
                     >
                       <ShieldCheck size={15} aria-hidden="true" />
                       Mark reviewed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void patchWithReviewMetadata(
+                          tool,
+                          {
+                            status: "reviewed",
+                            reviewDepth: "deep_review",
+                            confidenceScore: "high",
+                            lastReviewedAt: new Date().toISOString(),
+                          },
+                          "Promoted to Deep Review in admin review.",
+                          { reviewQueueState: "deep_review" },
+                        )
+                      }
+                      className="mt-2 inline-flex h-9 items-center gap-2 rounded-md bg-[var(--arena-ink)] px-3 text-sm font-semibold text-white"
+                    >
+                      Deep review
                     </button>
                   </td>
                   <td className="px-4 py-4">
@@ -575,16 +796,17 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                       <button
                         type="button"
                         onClick={() =>
-                          void patchTool(
-                            tool.slug,
-                            { lastReviewedAt: new Date().toISOString() },
-                            "Review timestamp stamped in admin.",
+                          void patchWithReviewMetadata(
+                            tool,
+                            { status: "unreviewed", reviewDepth: "indexed", confidenceScore: "low" },
+                            "Marked needs more evidence in admin review.",
+                            { reviewQueueState: "needs_more_evidence" },
                           )
                         }
                         className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-semibold"
                       >
                         <Save size={15} aria-hidden="true" />
-                        Stamp
+                        Needs evidence
                       </button>
                     </div>
                   </td>

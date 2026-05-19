@@ -294,7 +294,7 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
       scoreWeights,
       confidenceRules: [
         "Trust score and confidence score are separate.",
-        "Leaderboards include only Deep Review or Maintainer Verified entries.",
+        "Leaderboards include only Deep Review entries or Maintainer Verified listings with explicit maintainer confirmation evidence.",
         "Source Reviewed and Install Tested rows are discovery evidence, not ranked recommendations.",
         "Top trusted lists must exclude low-confidence and high-risk rows.",
         "Use list_top_safe_tools for confidence-gated safety recommendations from mcp_tools.",

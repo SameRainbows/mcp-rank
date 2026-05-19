@@ -51,7 +51,7 @@ export default function MethodologyPage() {
             <div>
               <h3 className="font-semibold text-[var(--arena-ink)]">Review depth gates rankings</h3>
               <p className="mt-2">
-                Only Deep Review and Maintainer Verified entries appear in leaderboards. Indexed, Source Reviewed, and Install Tested listings remain searchable but unranked.
+                Only Deep Review entries and listings with explicit Maintainer Verified evidence appear in leaderboards. Indexed, Source Reviewed, and Install Tested listings remain searchable but unranked.
               </p>
             </div>
             <div>
@@ -63,7 +63,7 @@ export default function MethodologyPage() {
             <div>
               <h3 className="font-semibold text-[var(--arena-ink)]">Maintainer verified is stronger evidence</h3>
               <p className="mt-2">
-                Maintainer verification means provenance or listing details have been checked more directly, not that the server is formally certified.
+                Maintainer verification means a real maintainer has claimed or confirmed the listing details. It is not inferred from an external directory and is not formal certification.
               </p>
             </div>
             <div>
@@ -79,7 +79,7 @@ export default function MethodologyPage() {
           <h2 className="font-serif text-2xl font-semibold">Data sources</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
             MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search,
-            and maintainer submissions. Rankings are assigned only after Deep Review or Maintainer Verified review depth.
+            and maintainer submissions. Rankings are assigned only after Deep Review or explicit Maintainer Verified review depth.
           </p>
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
             External source metadata may come from Glama, the official MCP Registry, Smithery, package registries, or maintainer-submitted links. External scores or verification signals are not treated as MCP Rank scores.

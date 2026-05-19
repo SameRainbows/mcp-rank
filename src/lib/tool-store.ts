@@ -113,6 +113,14 @@ export function normalizeToolInput(input: McpToolInput): McpTool {
   const name = String(input.name ?? "").trim();
   const slug = slugify(String(input.slug || name || input.githubUrl || input.github_url || "mcp-tool"));
   const trustScore = toNumber(input.trust_score ?? input.trustScore);
+  const enrichment = input.enrichment ?? {};
+  const requestedReviewDepth = normalizeReviewDepth(input.reviewDepth ?? input.review_depth);
+  const maintainerVerifiedAt =
+    typeof enrichment.maintainerVerifiedAt === "string"
+      ? enrichment.maintainerVerifiedAt
+      : typeof enrichment.maintainerConfirmedAt === "string"
+        ? enrichment.maintainerConfirmedAt
+        : "";
 
   return {
     name: name || slug,
@@ -128,13 +136,13 @@ export function normalizeToolInput(input: McpToolInput): McpTool {
     lastCommit: String(input.lastCommit ?? input.last_commit ?? "") || null,
     license: String(input.license ?? "").trim(),
     status: normalizeStatus(input.status),
-    reviewDepth: normalizeReviewDepth(input.reviewDepth ?? input.review_depth),
+    reviewDepth: requestedReviewDepth === "maintainer_verified" && !maintainerVerifiedAt ? "deep_review" : requestedReviewDepth,
     trustScore,
     confidenceScore: normalizeConfidence(input.confidenceScore ?? input.confidence_score),
     openIssues: toNumber(input.openIssues ?? input.open_issues),
     readmeLength: toNumber(input.readmeLength ?? input.readme_length),
     lastReviewedAt: String(input.lastReviewedAt ?? input.last_reviewed_at ?? "") || null,
-    enrichment: input.enrichment ?? {},
+    enrichment,
   };
 }
 
@@ -188,6 +196,13 @@ const memoryTools = new Map<string, McpTool>(seedTools.map((tool) => [tool.slug,
 
 function isRecoverableDatabaseError(error: unknown) {
   return error instanceof Error && /exceeded the data transfer quota|HTTP status 402|DATABASE_URL/i.test(error.message);
+}
+
+function mergeToolEnrichment(existing: McpTool, input: McpToolInput) {
+  return {
+    ...(existing.enrichment ?? {}),
+    ...((input.enrichment as Record<string, unknown> | undefined) ?? {}),
+  };
 }
 
 function isIndexedGlamaTool(tool: McpTool) {
@@ -483,7 +498,7 @@ export async function patchMcpTool(
 ) {
   const existing = (await listMcpTools("all")).find((tool) => tool.slug === slug);
   if (!existing) return null;
-  const merged = normalizeToolInput({ ...existing, ...input, slug });
+  const merged = normalizeToolInput({ ...existing, ...input, slug, enrichment: mergeToolEnrichment(existing, input) });
   await upsertMcpTools([merged]);
   if (hasReviewChange(existing, merged)) {
     await createMcpToolSnapshot(existing, merged, {

@@ -59,8 +59,10 @@ function normalizeReviewDepth(
   value: unknown,
   status: ReviewStatus,
   maintainerVerified = false,
+  maintainerVerifiedAt?: string | null,
   fallback?: ReviewDepth,
 ): ReviewDepth {
+  const hasMaintainerVerification = Boolean(maintainerVerified && maintainerVerifiedAt);
   if (
     value === "indexed" ||
     value === "source_reviewed" ||
@@ -68,13 +70,14 @@ function normalizeReviewDepth(
     value === "deep_review" ||
     value === "maintainer_verified"
   ) {
+    if (value === "maintainer_verified" && !hasMaintainerVerification) return fallback ?? "deep_review";
     if (value !== "indexed" || status === "indexed") return value;
     if (fallback) return fallback;
-    if (maintainerVerified || status === "maintainer_verified") return "maintainer_verified";
+    if (hasMaintainerVerification) return "maintainer_verified";
     return "source_reviewed";
   }
 
-  if (maintainerVerified || status === "maintainer_verified") return "maintainer_verified";
+  if (hasMaintainerVerification) return "maintainer_verified";
   if (status === "reviewed") return fallback ?? "source_reviewed";
   return "indexed";
 }
@@ -99,9 +102,15 @@ function mapServer(row: ServerRow, fallback?: McpServer): McpServer {
     lastReviewed: row.last_reviewed,
     evidenceUpdated: row.evidence_updated || row.last_reviewed,
     status: row.status,
-    reviewDepth: normalizeReviewDepth(row.review_depth, row.status, row.maintainer_verified, fallback?.reviewDepth),
+    reviewDepth: normalizeReviewDepth(
+      row.review_depth,
+      row.status,
+      row.maintainer_verified,
+      row.maintainer_verified_at,
+      fallback?.reviewDepth,
+    ),
     confidence: row.confidence,
-    maintainerVerified: row.maintainer_verified,
+    maintainerVerified: Boolean(row.maintainer_verified && row.maintainer_verified_at),
     maintainerVerifiedAt: row.maintainer_verified_at ?? undefined,
     transports: row.transports,
     clients: row.clients as McpServer["clients"],
@@ -175,7 +184,18 @@ export function mapToolToServer(tool: McpTool): McpServer {
   const lastSeenAt = typeof tool.enrichment?.lastSeenAt === "string" ? tool.enrichment.lastSeenAt.slice(0, 10) : importedAt;
   const sourceKind = typeof tool.enrichment?.sourceKind === "string" ? tool.enrichment.sourceKind : "public source";
   const status = toolStatusToServerStatus(tool);
-  const reviewDepth: ReviewDepth = tool.reviewDepth === "indexed" && status === "reviewed" ? "source_reviewed" : tool.reviewDepth;
+  const maintainerVerifiedAt =
+    typeof tool.enrichment?.maintainerVerifiedAt === "string"
+      ? tool.enrichment.maintainerVerifiedAt
+      : typeof tool.enrichment?.maintainerConfirmedAt === "string"
+        ? tool.enrichment.maintainerConfirmedAt
+        : "";
+  const reviewDepth: ReviewDepth =
+    tool.reviewDepth === "maintainer_verified" && !maintainerVerifiedAt
+      ? "deep_review"
+      : tool.reviewDepth === "indexed" && status === "reviewed"
+        ? "source_reviewed"
+        : tool.reviewDepth;
   const confidence = toolConfidenceToServerConfidence(tool);
   const packageName = packageNameFromUrl(tool.packageUrl);
   const trustScore = tool.trustScore ?? 0;
@@ -208,10 +228,16 @@ export function mapToolToServer(tool: McpTool): McpServer {
     status,
     reviewDepth,
     confidence,
-    maintainerVerified: false,
+    maintainerVerified: Boolean(maintainerVerifiedAt),
+    maintainerVerifiedAt: maintainerVerifiedAt || undefined,
     transports: [],
     clients: ["claude", "cursor", "codex", "vscode"],
-    risk: status === "high_risk" ? "high" : "medium",
+    risk:
+      tool.enrichment?.reviewRisk === "low" || tool.enrichment?.reviewRisk === "medium" || tool.enrichment?.reviewRisk === "high"
+        ? tool.enrichment.reviewRisk
+        : status === "high_risk"
+          ? "high"
+          : "medium",
     score,
     signals:
       status === "indexed"

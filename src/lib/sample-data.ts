@@ -31,7 +31,6 @@ function defaultReviewDepth(seed: ServerSeed): ReviewDepth {
   if (seed.reviewDepth) return seed.reviewDepth;
   if (seed.status === "indexed") return "indexed";
   if (!leaderboardReviewSlugs.has(seed.slug)) return "install_tested";
-  if (seed.status === "maintainer_verified") return "maintainer_verified";
   return "deep_review";
 }
 
@@ -48,7 +47,7 @@ function server(seed: ServerSeed): McpServer {
     description: seed.description ?? seed.tagline,
     category: normalizeCategory(seed.category),
     evidenceUpdated: seed.evidenceUpdated ?? seed.lastReviewed,
-    maintainerVerified: seed.maintainerVerified ?? seed.status === "maintainer_verified",
+    maintainerVerified: seed.maintainerVerified ?? false,
     reviewDepth: defaultReviewDepth(seed),
     trustScore: overallScore(seed.score),
   };
@@ -102,9 +101,8 @@ const reviewedServers: McpServer[] = [
     stars: 24700,
     lastReviewed: "2026-05-14",
     evidenceUpdated: "2026-05-15",
-    status: "maintainer_verified",
+    status: "reviewed",
     confidence: "high",
-    maintainerVerifiedAt: "2026-05-14",
     transports: ["stdio", "streamable-http"],
     clients,
     risk: "low",
@@ -212,9 +210,8 @@ const reviewedServers: McpServer[] = [
     stars: 15800,
     lastReviewed: "2026-05-14",
     evidenceUpdated: "2026-05-14",
-    status: "maintainer_verified",
+    status: "reviewed",
     confidence: "high",
-    maintainerVerifiedAt: "2026-05-14",
     transports: ["stdio", "sse"],
     clients: ["claude", "cursor", "codex"],
     risk: "low",

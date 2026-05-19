@@ -2,7 +2,7 @@ import type { McpServer } from "./types";
 
 export const statusLabels = {
   indexed: "Indexed",
-  reviewed: "Reviewed",
+  reviewed: "MCP Rank Reviewed",
   maintainer_verified: "Maintainer Verified",
   deprecated: "Deprecated",
   high_risk: "High Risk",
@@ -22,11 +22,16 @@ export const reviewDepthLabels = {
   maintainer_verified: "Maintainer Verified",
 } as const;
 
+export function hasMaintainerVerification(server: McpServer) {
+  return Boolean(server.maintainerVerified && server.maintainerVerifiedAt);
+}
+
 export function evidenceUpdatedAt(server: McpServer) {
   return server.evidenceUpdated || server.lastReviewed;
 }
 
 export function reviewStatusLabel(server: McpServer) {
+  if (server.status === "maintainer_verified" && !hasMaintainerVerification(server)) return "MCP Rank Reviewed";
   return statusLabels[server.status] ?? "Indexed";
 }
 
@@ -35,11 +40,12 @@ export function confidenceLabel(server: McpServer) {
 }
 
 export function reviewDepthLabel(server: McpServer) {
+  if (server.reviewDepth === "maintainer_verified" && !hasMaintainerVerification(server)) return "Deep Review";
   return reviewDepthLabels[server.reviewDepth] ?? "Indexed";
 }
 
 export function isReviewedForLeaderboards(server: McpServer) {
-  return server.reviewDepth === "deep_review" || server.reviewDepth === "maintainer_verified";
+  return server.reviewDepth === "deep_review" || (server.reviewDepth === "maintainer_verified" && hasMaintainerVerification(server));
 }
 
 export function isRankable(server: McpServer) {

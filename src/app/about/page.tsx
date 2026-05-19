@@ -39,6 +39,9 @@ export default function AboutPage() {
             MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search, and maintainer submissions.
             Rankings and trust labels are assigned only after MCP Rank review, so imported directory data is attribution, not original review work.
           </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            Indexed tools are discovery records, not recommendations. External source metadata may come from Glama, the official MCP Registry, Smithery, package registries, or maintainer-submitted links, but external scores or verification signals are not MCP Rank scores.
+          </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/methodology" className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
               Read methodology

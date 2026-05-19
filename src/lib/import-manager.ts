@@ -36,6 +36,31 @@ function sourceLinkForRecord(record: ImportedMcpToolRecord) {
   };
 }
 
+function sourceLinksForRecord(record: ImportedMcpToolRecord) {
+  const links = [sourceLinkForRecord(record)];
+  if (record.homepageUrl && record.homepageUrl !== record.sourceUrl) {
+    links.push({
+      provider: record.sourceProvider,
+      kind: record.sourceKind,
+      label: "Homepage/docs",
+      url: record.homepageUrl,
+      externalId: record.externalId ?? "",
+      lastSeenAt: new Date().toISOString(),
+    });
+  }
+  if (record.docsUrl && record.docsUrl !== record.sourceUrl && record.docsUrl !== record.homepageUrl) {
+    links.push({
+      provider: record.sourceProvider,
+      kind: record.sourceKind,
+      label: "Docs",
+      url: record.docsUrl,
+      externalId: record.externalId ?? "",
+      lastSeenAt: new Date().toISOString(),
+    });
+  }
+  return links.filter((link) => link.url);
+}
+
 function importSourcesFromTool(tool: McpTool) {
   const enrichment = tool.enrichment ?? {};
   const sources = Array.isArray(enrichment.importSources) ? enrichment.importSources : [];
@@ -52,14 +77,16 @@ function mergeSourceMetadata(tool: McpTool, record: ImportedMcpToolRecord): McpT
   const now = new Date().toISOString();
   const existingImportSources = importSourcesFromTool(tool);
   const existingSourceLinks = sourceLinksFromTool(tool);
-  const nextSourceLink = sourceLinkForRecord(record);
+  const nextSourceLinks = sourceLinksForRecord(record);
   const sourceLinkMap = new Map<string, Record<string, unknown>>();
 
   for (const link of existingSourceLinks) {
     const url = typeof link.url === "string" ? link.url : "";
     if (url) sourceLinkMap.set(url, link);
   }
-  if (nextSourceLink.url) sourceLinkMap.set(nextSourceLink.url, nextSourceLink);
+  for (const nextSourceLink of nextSourceLinks) {
+    if (nextSourceLink.url) sourceLinkMap.set(nextSourceLink.url, nextSourceLink);
+  }
 
   const importSourceKey = `${record.sourceProvider}:${record.externalId || record.sourceUrl}`;
   const importSourceMap = new Map<string, Record<string, unknown>>();
@@ -87,6 +114,15 @@ function mergeSourceMetadata(tool: McpTool, record: ImportedMcpToolRecord): McpT
       importedAt: (tool.enrichment?.importedAt as string | undefined) ?? now,
       lastSeenAt: now,
       sourceKind: (tool.enrichment?.sourceKind as string | undefined) ?? record.sourceKind,
+      externalSignals: mergeUniqueStrings([
+        ...(((tool.enrichment?.externalSignals as string[] | undefined) ?? [])),
+        ...(record.externalSignals ?? []),
+      ]),
+      tags: mergeUniqueStrings([
+        ...(((tool.enrichment?.tags as string[] | undefined) ?? [])),
+        ...(record.tags ?? []),
+      ]),
+      toolCount: typeof record.toolCount === "number" ? record.toolCount : tool.enrichment?.toolCount,
       importSources: [...importSourceMap.values()],
       sourceLinks: [...sourceLinkMap.values()],
       rawImports: {
@@ -113,6 +149,7 @@ function importedRecordToToolInput(record: ImportedMcpToolRecord): McpToolInput 
     packageUrl,
     installCommand: record.installCommand || (packageName ? `npx -y ${packageName}` : ""),
     status: "unreviewed",
+    reviewDepth: "indexed",
     trustScore: null,
     confidenceScore: "low",
     enrichment: {
@@ -120,6 +157,9 @@ function importedRecordToToolInput(record: ImportedMcpToolRecord): McpToolInput 
       lastSeenAt: now,
       sourceKind: record.sourceKind,
       externalId: record.externalId ?? "",
+      externalSignals: record.externalSignals ?? [],
+      tags: record.tags ?? [],
+      toolCount: record.toolCount ?? null,
       importSources: [
         {
           key: `${record.sourceProvider}:${record.externalId || record.sourceUrl}`,
@@ -130,7 +170,7 @@ function importedRecordToToolInput(record: ImportedMcpToolRecord): McpToolInput 
           lastSeenAt: now,
         },
       ],
-      sourceLinks: [sourceLinkForRecord(record)],
+      sourceLinks: sourceLinksForRecord(record),
       rawImports: { [record.sourceProvider]: record.rawMetadata ?? {} },
     },
   });
@@ -192,7 +232,7 @@ export async function runMcpToolImport(options: RunImportOptions): Promise<Impor
     const duplicate = findDuplicate(record, dedupeIndex);
     if (duplicate) {
       duplicates += 1;
-      updatedSourceLinks += record.sourceUrl ? 1 : 0;
+      updatedSourceLinks += sourceLinksForRecord(record).length;
       duplicateUpdates.push({ tool: duplicate, record });
       preview.push({ record, slug, action: "update_duplicate", duplicateSlug: duplicate.slug });
       continue;

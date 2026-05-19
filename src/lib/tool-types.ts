@@ -1,3 +1,5 @@
+import type { ReviewDepth } from "./types";
+
 export type ConfidenceScore = "unreviewed" | "low" | "medium" | "high";
 
 export type ToolStatus = "unreviewed" | "reviewed" | "deprecated" | "blocked";
@@ -20,6 +22,7 @@ export type McpTool = {
   lastCommit: string | null;
   license: string;
   status: ToolStatus;
+  reviewDepth: ReviewDepth;
   trustScore: number | null;
   confidenceScore: ConfidenceScore;
   openIssues: number | null;
@@ -35,6 +38,7 @@ export type McpToolInput = Partial<McpTool> & {
   install_command?: string;
   trust_score?: number | string | null;
   confidence_score?: ConfidenceScore | string;
+  review_depth?: ReviewDepth | string;
   last_commit?: string | null;
   last_reviewed_at?: string | null;
   open_issues?: number | string | null;
@@ -56,7 +60,11 @@ export type ImportedMcpToolRecord = {
   packageName?: string;
   packageUrl?: string;
   homepageUrl?: string;
+  docsUrl?: string;
   installCommand?: string;
+  tags?: string[];
+  toolCount?: number | null;
+  externalSignals?: string[];
   rawMetadata?: Record<string, unknown>;
 };
 

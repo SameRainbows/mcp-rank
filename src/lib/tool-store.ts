@@ -3,6 +3,7 @@ import { createMcpToolSnapshot } from "./review-snapshots";
 import { servers } from "./sample-data";
 import { isTrustedRankable, packageUrlFor } from "./server-derived";
 import type { ConfidenceScore, McpTool, McpToolInput, ToolStatus } from "./tool-types";
+import type { ReviewDepth } from "./types";
 
 type ToolRow = {
   name: string;
@@ -18,6 +19,7 @@ type ToolRow = {
   last_commit: string | null;
   license: string;
   status: ToolStatus;
+  review_depth: ReviewDepth;
   trust_score: number | null;
   confidence_score: ConfidenceScore;
   open_issues: number | null;
@@ -27,11 +29,18 @@ type ToolRow = {
 };
 
 let sqlClient: ReturnType<typeof neon> | null = null;
+let toolSchemaReady = false;
 
 function getSql() {
   if (!process.env.DATABASE_URL) return null;
   if (!sqlClient) sqlClient = neon(process.env.DATABASE_URL);
   return sqlClient;
+}
+
+async function ensureToolSchema(sql: ReturnType<typeof neon>) {
+  if (toolSchemaReady) return;
+  await sql`alter table mcp_tools add column if not exists review_depth text not null default 'indexed'`;
+  toolSchemaReady = true;
 }
 
 function slugify(value: string) {
@@ -62,6 +71,19 @@ function normalizeStatus(value: unknown): ToolStatus {
   return "unreviewed";
 }
 
+function normalizeReviewDepth(value: unknown): ReviewDepth {
+  const normalized = String(value ?? "indexed").toLowerCase();
+  if (
+    normalized === "source_reviewed" ||
+    normalized === "install_tested" ||
+    normalized === "deep_review" ||
+    normalized === "maintainer_verified"
+  ) {
+    return normalized;
+  }
+  return "indexed";
+}
+
 function rowToTool(row: ToolRow): McpTool {
   return {
     name: row.name,
@@ -77,6 +99,7 @@ function rowToTool(row: ToolRow): McpTool {
     lastCommit: row.last_commit,
     license: row.license,
     status: row.status,
+    reviewDepth: normalizeReviewDepth(row.review_depth),
     trustScore: row.trust_score,
     confidenceScore: row.confidence_score,
     openIssues: row.open_issues,
@@ -105,6 +128,7 @@ export function normalizeToolInput(input: McpToolInput): McpTool {
     lastCommit: String(input.lastCommit ?? input.last_commit ?? "") || null,
     license: String(input.license ?? "").trim(),
     status: normalizeStatus(input.status),
+    reviewDepth: normalizeReviewDepth(input.reviewDepth ?? input.review_depth),
     trustScore,
     confidenceScore: normalizeConfidence(input.confidenceScore ?? input.confidence_score),
     openIssues: toNumber(input.openIssues ?? input.open_issues),
@@ -117,6 +141,7 @@ export function normalizeToolInput(input: McpToolInput): McpTool {
 function hasReviewChange(before: McpTool, after: McpTool) {
   return (
     before.status !== after.status ||
+    before.reviewDepth !== after.reviewDepth ||
     before.trustScore !== after.trustScore ||
     before.confidenceScore !== after.confidenceScore ||
     before.lastReviewedAt !== after.lastReviewedAt
@@ -144,6 +169,7 @@ const seedTools: McpTool[] = servers.map((server) =>
           : server.status === "high_risk"
             ? "blocked"
             : "reviewed",
+    reviewDepth: server.reviewDepth,
     trustScore: Math.round(
       (server.score.installDocs +
         server.score.maintenance +
@@ -167,11 +193,13 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
     return status && status !== "all" ? tools.filter((tool) => tool.status === status) : tools;
   }
 
+  await ensureToolSchema(sql);
+
   const rows =
     status && status !== "all"
       ? ((await sql`
           select name, slug, description, category, source, source_url, github_url, package_url,
-            install_command, stars, last_commit::text, license, status, trust_score,
+            install_command, stars, last_commit::text, license, status, review_depth, trust_score,
             confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
           from mcp_tools
           where status = ${status}
@@ -179,7 +207,7 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
         `) as ToolRow[])
       : ((await sql`
           select name, slug, description, category, source, source_url, github_url, package_url,
-            install_command, stars, last_commit::text, license, status, trust_score,
+            install_command, stars, last_commit::text, license, status, review_depth, trust_score,
             confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
           from mcp_tools
           order by coalesce(trust_score, -1) desc, name asc
@@ -206,9 +234,11 @@ export async function listTopSafeMcpTools(limit = 10) {
       .slice(0, limit);
   }
 
+  await ensureToolSchema(sql);
+
   const rows = (await sql`
     select name, slug, description, category, source, source_url, github_url, package_url,
-      install_command, stars, last_commit::text, license, status, trust_score,
+      install_command, stars, last_commit::text, license, status, review_depth, trust_score,
       confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
     from mcp_tools
     where status = 'reviewed'
@@ -233,10 +263,11 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
   if (!sql) {
     for (const tool of tools) {
       const existing = memoryTools.get(tool.slug);
-      if (existing?.status === "reviewed" && tool.status === "unreviewed") {
+      if (existing && tool.status === "unreviewed") {
         memoryTools.set(tool.slug, {
           ...tool,
           status: existing.status,
+          reviewDepth: existing.reviewDepth,
           trustScore: existing.trustScore,
           confidenceScore: existing.confidenceScore,
           lastReviewedAt: existing.lastReviewedAt,
@@ -248,16 +279,18 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
     return { persisted: false, count: tools.length, tools };
   }
 
+  await ensureToolSchema(sql);
+
   for (const tool of tools) {
     await sql`
       insert into mcp_tools (
         name, slug, description, category, source, source_url, github_url, package_url,
-        install_command, stars, last_commit, license, status, trust_score, confidence_score,
+        install_command, stars, last_commit, license, status, review_depth, trust_score, confidence_score,
         open_issues, readme_length, last_reviewed_at, enrichment, updated_at
       ) values (
         ${tool.name}, ${tool.slug}, ${tool.description}, ${tool.category}, ${tool.source},
         ${tool.sourceUrl}, ${tool.githubUrl}, ${tool.packageUrl}, ${tool.installCommand},
-        ${tool.stars}, ${tool.lastCommit}, ${tool.license}, ${tool.status}, ${tool.trustScore},
+        ${tool.stars}, ${tool.lastCommit}, ${tool.license}, ${tool.status}, ${tool.reviewDepth}, ${tool.trustScore},
         ${tool.confidenceScore}, ${tool.openIssues}, ${tool.readmeLength}, ${tool.lastReviewedAt},
         ${JSON.stringify(tool.enrichment ?? {})}, now()
       )
@@ -274,21 +307,25 @@ export async function upsertMcpTools(inputs: McpToolInput[]) {
         last_commit = excluded.last_commit,
         license = excluded.license,
         status = case
-          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.status
+          when excluded.status = 'unreviewed' then mcp_tools.status
           else excluded.status
         end,
+        review_depth = case
+          when excluded.status = 'unreviewed' then mcp_tools.review_depth
+          else excluded.review_depth
+        end,
         trust_score = case
-          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.trust_score
+          when excluded.status = 'unreviewed' then mcp_tools.trust_score
           else excluded.trust_score
         end,
         confidence_score = case
-          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.confidence_score
+          when excluded.status = 'unreviewed' then mcp_tools.confidence_score
           else excluded.confidence_score
         end,
         open_issues = excluded.open_issues,
         readme_length = excluded.readme_length,
         last_reviewed_at = case
-          when mcp_tools.status = 'reviewed' and excluded.status = 'unreviewed' then mcp_tools.last_reviewed_at
+          when excluded.status = 'unreviewed' then mcp_tools.last_reviewed_at
           else excluded.last_reviewed_at
         end,
         enrichment = excluded.enrichment,

@@ -1,2 +1,2 @@
-name,description,category,source_url,github_url,package_url,install_command,external_id,source_kind
-Example MCP Server,"Short public-source description only; MCP Rank review comes later.",Developer tools,https://example.com/mcp,https://github.com/example/mcp,https://www.npmjs.com/package/example-mcp,npx -y example-mcp,example/mcp,manual
+name,description,category,source_url,github_url,package_url,homepage_url,docs_url,install_command,external_id,source_kind,tags,tool_count
+Example MCP Server,"Short public-source description only; MCP Rank review comes later.",Developer tools,https://example.com/mcp,https://github.com/example/mcp,https://www.npmjs.com/package/example-mcp,https://example.com,https://example.com/docs,npx -y example-mcp,example/mcp,manual,"coding;files",12

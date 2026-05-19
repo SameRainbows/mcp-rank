@@ -94,11 +94,11 @@ export default async function ServerPage({ params }: PageProps) {
 
           <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_340px]">
             <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
-              <h2 className="font-serif text-2xl font-semibold">Indexed from public source</h2>
+              <h2 className="font-serif text-2xl font-semibold">Indexed from public MCP sources</h2>
               <div className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)]">
                 <div className="flex gap-3">
                   <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />
-                  <span>This tool is discoverable in MCP Rank, but it has not received an MCP Rank trust review.</span>
+                  <span>Indexed from public MCP sources. Not yet reviewed by MCP Rank.</span>
                 </div>
                 <div className="flex gap-3">
                   <CircleAlert className="mt-1 shrink-0 text-[var(--arena-amber)]" size={17} />

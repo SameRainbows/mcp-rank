@@ -73,6 +73,7 @@ export function dedupeKeysForRecord(record: ImportedMcpToolRecord) {
     normalizeGitHubUrl(record.githubUrl),
     packageName.toLowerCase(),
     normalizeUrl(record.homepageUrl),
+    normalizeUrl(record.docsUrl),
     normalizeUrl(record.sourceUrl),
     recordSlug(record),
     slugifyImportValue(record.name),

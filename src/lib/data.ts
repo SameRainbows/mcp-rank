@@ -170,7 +170,7 @@ function mapToolToServer(tool: McpTool): McpServer {
   const lastSeenAt = typeof tool.enrichment?.lastSeenAt === "string" ? tool.enrichment.lastSeenAt.slice(0, 10) : importedAt;
   const sourceKind = typeof tool.enrichment?.sourceKind === "string" ? tool.enrichment.sourceKind : "public source";
   const status = toolStatusToServerStatus(tool);
-  const reviewDepth: ReviewDepth = status === "reviewed" ? "source_reviewed" : "indexed";
+  const reviewDepth: ReviewDepth = tool.reviewDepth === "indexed" && status === "reviewed" ? "source_reviewed" : tool.reviewDepth;
   const confidence = toolConfidenceToServerConfidence(tool);
   const packageName = packageNameFromUrl(tool.packageUrl);
   const trustScore = tool.trustScore ?? 0;

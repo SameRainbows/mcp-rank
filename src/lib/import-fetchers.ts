@@ -21,14 +21,13 @@ function asString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function sourceUrlFromRecord(record: Record<string, unknown>) {
-  return (
-    asString(record.url) ||
-    asString(record.homepage) ||
-    asString(record.repository?.toString()) ||
-    asString(record.sourceUrl) ||
-    ""
-  );
+function asStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function asNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function parseCsvLine(line: string) {
@@ -94,6 +93,8 @@ function officialRecordToImport(server: Record<string, unknown>): ImportedMcpToo
     packageName,
     packageUrl: packageUrlFromName(packageName),
     installCommand: packageName ? `npx -y ${packageName}` : "",
+    tags: asStringArray(server.tags),
+    toolCount: Array.isArray(server.tools) ? server.tools.length : null,
     rawMetadata: server,
   };
 }
@@ -171,6 +172,8 @@ async function fetchSmithery({ limit, query }: FetchOptions): Promise<FetchResul
             sourceUrl: homepage || `https://smithery.ai/server/${asString(server.qualifiedName)}`,
             externalId: asString(server.id) || asString(server.qualifiedName),
             homepageUrl: homepage,
+            tags: asStringArray(server.tags),
+            toolCount: asNumber(server.toolCount) ?? (Array.isArray(server.tools) ? server.tools.length : null),
             rawMetadata: server,
           } satisfies ImportedMcpToolRecord;
         }),
@@ -192,45 +195,57 @@ async function fetchGlama({ limit, query }: FetchOptions): Promise<FetchResult> 
   const provider: ImportSourceProvider = "glama";
   const records: ImportedMcpToolRecord[] = [];
   const errors: string[] = [];
+  let cursor = "";
 
   try {
-    const url = new URL("https://glama.ai/api/mcp/v1/servers");
-    url.searchParams.set("limit", String(Math.min(limit, 100)));
-    if (query) url.searchParams.set("q", query);
+    while (records.length < limit) {
+      const url = new URL("https://glama.ai/api/mcp/v1/servers");
+      url.searchParams.set("first", String(Math.min(100, limit - records.length)));
+      if (cursor) url.searchParams.set("after", cursor);
+      if (query) url.searchParams.set("q", query);
 
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) {
-      return { provider, records, errors: [`Glama returned ${response.status}; no HTML scraping attempted.`] };
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        errors.push(`Glama returned ${response.status}; no HTML scraping attempted.`);
+        break;
+      }
+
+      const data = asRecord(await response.json());
+      const maybeRecords = Array.isArray(data.servers) ? data.servers.map(asRecord) : [];
+      records.push(
+        ...maybeRecords.map((server) => {
+          const repository = asRecord(server.repository);
+          const repositoryUrl = asString(server.repositoryUrl) || asString(server.repository_url) || asString(server.githubUrl) || asString(repository.url);
+          const packageUrl = asString(server.packageUrl) || asString(server.package_url);
+          const attributes = asStringArray(server.attributes);
+          const externalSignals = attributes
+            .filter((attribute) => attribute.startsWith("author:") || attribute.startsWith("hosting:"))
+            .map((attribute) => `External source metadata: Glama ${attribute.replace(":", " ")}`);
+
+          return {
+            name: asString(server.name) || asString(server.title) || asString(server.slug),
+            description: asString(server.description) || asString(server.tagline),
+            category: asString(server.category) || "Uncategorized",
+            sourceProvider: provider,
+            sourceKind: providerKind(provider),
+            sourceUrl: asString(server.url) || `https://glama.ai/mcp/servers/${asString(server.id) || asString(server.slug)}`,
+            externalId: asString(server.id) || asString(server.slug),
+            githubUrl: repositoryUrl,
+            packageName: asString(server.packageName) || packageNameFromUrl(packageUrl),
+            packageUrl,
+            homepageUrl: asString(server.homepage),
+            tags: attributes,
+            toolCount: Array.isArray(server.tools) ? server.tools.length : null,
+            externalSignals,
+            rawMetadata: server,
+          } satisfies ImportedMcpToolRecord;
+        }),
+      );
+
+      const pageInfo = asRecord(data.pageInfo);
+      cursor = asString(pageInfo.endCursor);
+      if (!maybeRecords.length || !cursor || pageInfo.hasNextPage === false) break;
     }
-
-    const data = await response.json();
-    const maybeRecords = Array.isArray(data)
-      ? data.map(asRecord)
-      : Array.isArray(asRecord(data).servers)
-        ? (asRecord(data).servers as unknown[]).map(asRecord)
-        : [];
-
-    records.push(
-      ...maybeRecords.map((server) => {
-        const repositoryUrl = asString(server.repositoryUrl) || asString(server.repository_url) || asString(server.githubUrl);
-        const sourceUrl = sourceUrlFromRecord(server) || (repositoryUrl ? repositoryUrl : "");
-        const packageUrl = asString(server.packageUrl) || asString(server.package_url);
-        return {
-          name: asString(server.name) || asString(server.title) || asString(server.slug),
-          description: asString(server.description) || asString(server.tagline),
-          category: asString(server.category) || "Uncategorized",
-          sourceProvider: provider,
-          sourceKind: providerKind(provider),
-          sourceUrl: sourceUrl || `https://glama.ai/mcp/servers/${asString(server.slug)}`,
-          externalId: asString(server.id) || asString(server.slug),
-          githubUrl: repositoryUrl,
-          packageName: asString(server.packageName) || packageNameFromUrl(packageUrl),
-          packageUrl,
-          homepageUrl: asString(server.homepage),
-          rawMetadata: server,
-        } satisfies ImportedMcpToolRecord;
-      }),
-    );
   } catch (error) {
     errors.push(error instanceof Error ? error.message : "Glama fetch failed.");
   }
@@ -271,6 +286,7 @@ async function fetchGitHubSearch({ limit, query }: FetchOptions): Promise<FetchR
         externalId: String(repo.id ?? asString(repo.full_name)),
         githubUrl: asString(repo.html_url),
         homepageUrl: asString(repo.homepage),
+        tags: asStringArray(repo.topics),
         rawMetadata: repo,
       })),
     );
@@ -296,7 +312,10 @@ function importManualCsv({ csvText, limit }: FetchOptions): FetchResult {
     packageName: row.package_name || row.packageName || packageNameFromUrl(row.package_url || row.packageUrl),
     packageUrl: row.package_url || row.packageUrl,
     homepageUrl: row.homepage_url || row.homepageUrl,
+    docsUrl: row.docs_url || row.docsUrl,
     installCommand: row.install_command || row.installCommand,
+    tags: (row.tags || "").split(/[|;]/).map((tag) => tag.trim()).filter(Boolean),
+    toolCount: asNumber(row.tool_count || row.toolCount),
     rawMetadata: row,
   }));
 

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const sources = [
   "Official MCP registry",
   "Smithery",
-  "GLama and other MCP directories",
+  "Glama and other MCP directories",
   "GitHub search and repository metadata",
   "npm and PyPI package metadata",
 ];
@@ -81,6 +81,9 @@ export default function MethodologyPage() {
             MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search,
             and maintainer submissions. Rankings are assigned only after Deep Review or Maintainer Verified review depth.
           </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+            External source metadata may come from Glama, the official MCP Registry, Smithery, package registries, or maintainer-submitted links. External scores or verification signals are not treated as MCP Rank scores.
+          </p>
           <ul className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
             {sources.map((source) => (
               <li key={source} className="border-l-2 border-[var(--arena-green)] pl-3">
@@ -93,7 +96,7 @@ export default function MethodologyPage() {
         <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
           <h2 className="font-serif text-2xl font-semibold">Viable product path</h2>
           <ol className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)]">
-            <li>Normalize registry, Smithery, GLama, GitHub, npm, and PyPI candidates.</li>
+            <li>Normalize registry, Smithery, Glama, GitHub, npm, and PyPI candidates.</li>
             <li>Run reproducible install checks and collect client compatibility notes.</li>
             <li>Refresh GitHub stars and maintenance signals daily through Vercel Cron.</li>
             <li>Store scoring snapshots in Neon so every score change is explainable.</li>

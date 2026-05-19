@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Database, FileUp, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import type { ConfidenceScore, ImportResultSummary, ImportSourceProvider, McpTool, McpToolInput, ToolStatus } from "@/lib/tool-types";
+import type { ReviewDepth } from "@/lib/types";
 
 const csvColumns = [
   "name",
@@ -19,6 +20,7 @@ const csvColumns = [
   "last_commit",
   "license",
   "status",
+  "review_depth",
   "trust_score",
   "confidence_score",
   "last_reviewed_at",
@@ -176,8 +178,8 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           </div>
           <h1 className="mt-3 font-serif text-4xl font-semibold">Admin import and review</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
-            Start with CSV import, then manually set reviewed status, trust score, and confidence.
-            Top safety lists should only include medium or high confidence rows.
+            Import broadly as Indexed, then manually promote review depth only after MCP Rank review evidence exists.
+            Leaderboards only use Deep Review or Maintainer Verified rows.
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
@@ -242,7 +244,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
             <div className="text-sm font-semibold text-[var(--arena-blue)]">Aggregation importer</div>
             <h2 className="mt-2 font-serif text-3xl font-semibold">Import public MCP sources safely</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
-              Imports default to indexed, low-confidence, unreviewed records. Duplicates only refresh source metadata and never overwrite manual review fields.
+              Imports default to Indexed, low-confidence, unreviewed records. Duplicates only refresh source metadata and never overwrite MCP Rank review fields.
             </p>
           </div>
           <div className="flex flex-wrap items-start gap-2">
@@ -438,10 +440,10 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
 
       <section className="overflow-hidden rounded-lg border border-[var(--arena-line)] bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[1440px] border-collapse text-left text-sm">
             <thead className="bg-[var(--arena-surface)] text-xs font-semibold text-[var(--arena-muted)]">
               <tr>
-                {["Tool", "Source", "GitHub", "Stars", "Last commit", "License", "Status", "Trust", "Confidence", "Review", "Actions"].map(
+                {["Tool", "Source", "GitHub", "Stars", "Last commit", "License", "Status", "Depth", "Trust", "Confidence", "Review", "Actions"].map(
                   (header) => (
                     <th key={header} className="px-4 py-3">
                       {header}
@@ -463,13 +465,13 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                   <td className="px-4 py-4">
                     <div>{tool.source || "Manual"}</div>
                     <div className="mt-1 max-w-48 truncate text-xs text-[var(--arena-muted)]">
-                      {tool.sourceUrl || "Source URL needs review"}
+                      {tool.sourceUrl || "Source evidence pending"}
                     </div>
                   </td>
                   <td className="max-w-52 px-4 py-4">
-                    <div className="truncate text-xs">{tool.githubUrl || "Not linked"}</div>
+                    <div className="truncate text-xs">{tool.githubUrl || "Repository evidence pending"}</div>
                     <div className="mt-2 text-xs text-[var(--arena-muted)]">
-                      {tool.packageUrl || "Package URL not required yet"}
+                      {tool.packageUrl || "Package evidence pending"}
                     </div>
                   </td>
                   <td className="px-4 py-4 font-mono">{tool.stars ?? "-"}</td>
@@ -487,6 +489,25 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                       <option value="reviewed">Reviewed</option>
                       <option value="deprecated">Deprecated</option>
                       <option value="blocked">Blocked</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-4">
+                    <select
+                      value={tool.reviewDepth}
+                      onChange={(event) =>
+                        void patchTool(
+                          tool.slug,
+                          { reviewDepth: event.target.value as ReviewDepth },
+                          "Review depth changed in admin review.",
+                        )
+                      }
+                      className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm"
+                    >
+                      <option value="indexed">Indexed</option>
+                      <option value="source_reviewed">Source Reviewed</option>
+                      <option value="install_tested">Install Tested</option>
+                      <option value="deep_review">Deep Review</option>
+                      <option value="maintainer_verified">Maintainer Verified</option>
                     </select>
                   </td>
                   <td className="px-4 py-4">
@@ -527,6 +548,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
                           tool.slug,
                           {
                             status: "reviewed",
+                            reviewDepth: tool.reviewDepth === "indexed" ? "source_reviewed" : tool.reviewDepth,
                             lastReviewedAt: new Date().toISOString(),
                             confidenceScore:
                               tool.confidenceScore === "unreviewed" ? "low" : tool.confidenceScore,

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { confidenceLabel, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
-import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
+import type { ClientKey, McpServer, ReviewDepth, RiskLevel } from "@/lib/types";
 
 type SearchWorkbenchProps = {
   servers: McpServer[];
@@ -17,14 +17,14 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
   const [client, setClient] = useState<ClientKey | "all">("all");
   const [risk, setRisk] = useState<RiskLevel | "all">("all");
   const [sourceEvidence, setSourceEvidence] = useState<"all" | "ready" | "needs">("all");
-  const [reviewState, setReviewState] = useState<"all" | "reviewed" | "indexed">("all");
+  const [reviewDepth, setReviewDepth] = useState<ReviewDepth | "all" | "ranked">("all");
 
   const results = useMemo(() => {
     const statusWeight = (server: McpServer) => {
-      if (server.status === "maintainer_verified") return 0;
-      if (server.status === "reviewed") return 1;
-      if (server.status === "high_risk") return 2;
-      if (server.status === "indexed") return 3;
+      if (server.reviewDepth === "maintainer_verified") return 0;
+      if (server.reviewDepth === "deep_review") return 1;
+      if (server.reviewDepth === "install_tested") return 2;
+      if (server.reviewDepth === "source_reviewed") return 3;
       return 4;
     };
 
@@ -46,9 +46,9 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           text.includes(query.toLowerCase()) &&
           (client === "all" || server.clients.includes(client)) &&
           (risk === "all" || server.risk === risk) &&
-          (reviewState === "all" ||
-            (reviewState === "reviewed" && server.status !== "indexed") ||
-            (reviewState === "indexed" && server.status === "indexed")) &&
+            (reviewDepth === "all" ||
+            (reviewDepth === "ranked" && isRankable(server)) ||
+            server.reviewDepth === reviewDepth) &&
           (sourceEvidence === "all" ||
             (sourceEvidence === "ready" && !needsSourceEvidence) ||
             (sourceEvidence === "needs" && needsSourceEvidence))
@@ -61,7 +61,7 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
           overallScore(b.score) - overallScore(a.score) ||
           a.name.localeCompare(b.name),
       );
-  }, [client, query, reviewState, risk, servers, sourceEvidence]);
+  }, [client, query, reviewDepth, risk, servers, sourceEvidence]);
 
   return (
     <section className="rounded-xl border border-[var(--arena-line)] bg-white shadow-[0_10px_35px_rgba(33,29,24,0.05)]">
@@ -81,13 +81,17 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
         </label>
         <div className="mt-3 flex flex-wrap gap-2">
           <select
-            value={reviewState}
-            onChange={(event) => setReviewState(event.target.value as "all" | "reviewed" | "indexed")}
+            value={reviewDepth}
+            onChange={(event) => setReviewDepth(event.target.value as ReviewDepth | "all" | "ranked")}
             className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm font-medium"
           >
-            <option value="all">Reviewed first</option>
-            <option value="reviewed">Reviewed only</option>
-            <option value="indexed">Indexed only</option>
+            <option value="all">Review depth: all</option>
+            <option value="ranked">Ranked reviews only</option>
+            <option value="maintainer_verified">Maintainer Verified</option>
+            <option value="deep_review">Deep Review</option>
+            <option value="install_tested">Install Tested</option>
+            <option value="source_reviewed">Source Reviewed</option>
+            <option value="indexed">Indexed</option>
           </select>
           <select
             value={client}
@@ -136,22 +140,22 @@ export function SearchWorkbench({ servers }: SearchWorkbenchProps) {
                   {server.risk} risk
                 </span>
                 <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 py-1 text-xs font-semibold text-[var(--arena-muted)]">
-                  {reviewStatusLabel(server)}
+                  {reviewDepthLabel(server)}
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
-              {server.status === "indexed" && (
+              {!isRankable(server) && (
                 <p className="mt-2 text-xs font-semibold text-[var(--arena-muted)]">
-                  Indexed from public source, not yet reviewed by MCP Rank.
+                  {reviewDepthLabel(server)} listings are visible for discovery but excluded from public leaderboards.
                 </p>
               )}
               <p className="mt-3 font-mono text-xs text-[var(--arena-muted)]">
-                {[server.packageName || server.repositoryUrl || (server.status === "indexed" ? "Needs source review" : "Source-linked review"), `${confidenceLabel(server)} confidence`].join(" · ")}
+                {[server.packageName || server.repositoryUrl || (server.reviewDepth === "indexed" ? "Needs source review" : "Source-linked review"), `${confidenceLabel(server)} confidence`].join(" · ")}
               </p>
             </div>
             <div className="flex items-center gap-3 sm:justify-end">
               <span className="font-mono text-2xl font-semibold">
-                {server.status === "indexed" ? "Indexed" : overallScore(server.score)}
+                {isRankable(server) ? overallScore(server.score) : reviewDepthLabel(server)}
               </span>
               <ArrowUpRight size={18} aria-hidden="true" />
             </div>

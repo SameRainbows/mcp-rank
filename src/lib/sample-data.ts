@@ -1,5 +1,5 @@
 import { overallScore } from "./scoring";
-import type { ClientKey, ConfidenceLevel, McpServer, ReviewStatus, RiskLevel, SourceLink, WeeklyReport } from "./types";
+import type { ClientKey, ConfidenceLevel, McpServer, ReviewDepth, ReviewStatus, RiskLevel, SourceLink, WeeklyReport } from "./types";
 
 const registryLink: SourceLink = {
   label: "Official MCP registry",
@@ -7,18 +7,49 @@ const registryLink: SourceLink = {
   url: "https://registry.modelcontextprotocol.io/",
 };
 
-type ServerSeed = Omit<McpServer, "description" | "evidenceUpdated" | "maintainerVerified" | "trustScore"> & {
+const leaderboardReviewSlugs = new Set([
+  "github-mcp-server",
+  "filesystem",
+  "context7",
+  "brave-search",
+  "sequential-thinking",
+  "fetch",
+  "git",
+  "time",
+  "playwright-mcp",
+  "everything",
+]);
+
+type ServerSeed = Omit<McpServer, "description" | "evidenceUpdated" | "maintainerVerified" | "trustScore" | "reviewDepth"> & {
   description?: string;
   evidenceUpdated?: string;
   maintainerVerified?: boolean;
+  reviewDepth?: ReviewDepth;
 };
+
+function defaultReviewDepth(seed: ServerSeed): ReviewDepth {
+  if (seed.reviewDepth) return seed.reviewDepth;
+  if (seed.status === "indexed") return "indexed";
+  if (!leaderboardReviewSlugs.has(seed.slug)) return "install_tested";
+  if (seed.status === "maintainer_verified") return "maintainer_verified";
+  return "deep_review";
+}
+
+function normalizeCategory(category: string) {
+  if (category === "Unreviewed") return "Uncategorized";
+  if (category === "Reference") return "Testing";
+  if (category === "Location") return "Maps and location";
+  return category;
+}
 
 function server(seed: ServerSeed): McpServer {
   return {
     ...seed,
     description: seed.description ?? seed.tagline,
+    category: normalizeCategory(seed.category),
     evidenceUpdated: seed.evidenceUpdated ?? seed.lastReviewed,
     maintainerVerified: seed.maintainerVerified ?? seed.status === "maintainer_verified",
+    reviewDepth: defaultReviewDepth(seed),
     trustScore: overallScore(seed.score),
   };
 }
@@ -1254,7 +1285,7 @@ const lightweightReviewedServers = indexedSeeds
     return server({
       slug: item.slug,
       name: item.name,
-      category: item.category === "Unreviewed" ? "Developer tools" : item.category,
+      category: item.category === "Unreviewed" ? "Uncategorized" : item.category,
       tagline: item.tagline,
       source: (item.source ?? "Official MCP registry") + ", public repository, package, or provider endpoint review",
       sourceLinks: [
@@ -1270,19 +1301,20 @@ const lightweightReviewedServers = indexedSeeds
       lastReviewed: "2026-05-15",
       evidenceUpdated: "2026-05-15",
       status: "reviewed",
+      reviewDepth: "source_reviewed",
       confidence,
       transports: item.sourceUrl ? ["streamable-http"] : ["stdio"],
       clients: item.sourceUrl ? ["claude", "cursor", "codex"] : clients,
       risk,
       score: reviewedScore(base, risk),
       signals: [
-        "Official registry listing reviewed",
+        "Official registry listing source-reviewed",
         ...(item.repositoryUrl ? ["Repository source link available"] : []),
         ...(item.packageName ? ["Install package or container identifier available"] : []),
         ...(item.sourceUrl ? ["Provider endpoint or docs URL available"] : []),
       ],
       evidence: [
-        "MCP Rank completed a lightweight source review on 2026-05-15 using official registry metadata and available public source links.",
+        "MCP Rank completed a source review on 2026-05-15 using official registry metadata and available public source links.",
         item.repositoryUrl
           ? "Repository provenance is directly linkable for follow-up maintainer and activity checks."
           : "No repository URL was available in the indexed metadata, so confidence is capped until maintainer/source provenance is verified.",
@@ -1291,7 +1323,7 @@ const lightweightReviewedServers = indexedSeeds
           : "No provider endpoint URL was available beyond package or repository metadata.",
       ],
       cautions: [
-        "This is a lightweight review, not a full install-and-auth audit.",
+        "This is a source review, not a deep review or full install-and-auth audit.",
         risk === "high"
           ? "High-risk category: verify auth scopes, data access, and mutation behavior before production use."
           : "Verify install behavior and requested permissions in a sandbox before team rollout.",
@@ -1303,7 +1335,7 @@ const lightweightReviewedServers = indexedSeeds
         "Use " + item.name + " only after validating its install path and permissions.",
       ],
       useCases: [
-        "Teams considering " + item.name + " can now see a reviewed, evidence-linked listing instead of an indexed-only row.",
+        "Teams considering " + item.name + " can now see a source-reviewed, evidence-linked listing instead of an indexed-only row.",
         "Useful as a candidate for deeper review, maintainer claim, or comparison content.",
       ],
       riskAnalysis: [

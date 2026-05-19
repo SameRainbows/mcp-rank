@@ -7,7 +7,7 @@ import { LeaderboardOverview } from "@/components/leaderboard-overview";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServer, getServers, getWeeklyReport } from "@/lib/data";
-import { confidenceLabel, isTrustedRankable, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isTrustedRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 
 export default async function Home() {
@@ -107,7 +107,7 @@ export default async function Home() {
                       <span>
                         {index + 1}. {server.name}
                         <span className="block text-xs font-normal text-[var(--arena-muted)]">
-                          {reviewStatusLabel(server)} · {confidenceLabel(server)} confidence
+                          {reviewDepthLabel(server)} · {confidenceLabel(server)} confidence
                         </span>
                       </span>
                       <span className="font-mono font-semibold">{overallScore(server.score)}</span>

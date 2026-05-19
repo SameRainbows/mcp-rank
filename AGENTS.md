@@ -59,7 +59,7 @@ Known MVP/unfinished areas:
 - `/submit` prepares a `mailto:` review request; permanent submission storage is not implemented yet.
 - Newsletter signup persists locally in the browser as a placeholder until a provider is wired.
 - Admin data persists only when `DATABASE_URL` is set; otherwise `mcp_tools` changes are in-memory for the server process.
-- `scoring_snapshots` exists in the schema, but score-history capture is not implemented in app code yet.
+- Review snapshots are captured for admin review metadata changes; broader automated score-history capture from all review workflows is still incomplete.
 - Analytics uses browser `CustomEvent`s only; there is no external analytics sink in this repo.
 - Chat uses local evidence mode unless `MCP_CHAT_ENABLED=true` and Azure AI env vars are present.
 
@@ -105,7 +105,7 @@ Important data model split:
 - `mcp_servers` is the reviewed server table with rich score/evidence/caution fields and is suited for full review pages.
 - `mcp_tools` is the canonical import/admin queue table for CSV and source aggregation.
 - `mcp_tools.trust_score` and `mcp_tools.confidence_score` are deliberately separate.
-- `scoring_snapshots` is intended for explainable score history.
+- `scoring_snapshots` and `mcp_tool_snapshots` support explainable evidence history.
 
 ## Scoring And Ranking Rules
 
@@ -122,32 +122,36 @@ Weighted categories:
 
 Use `overallScore(score)` for the public MCP Rank score. Do not hand-roll alternate scoring formulas unless explicitly changing methodology.
 
-Status and confidence semantics:
+Status, review-depth, and confidence semantics:
 
 - Server status values: `indexed`, `reviewed`, `maintainer_verified`, `deprecated`, `high_risk`.
 - Tool status values: `unreviewed`, `reviewed`, `deprecated`, `blocked`.
+- Server review-depth values: `indexed`, `source_reviewed`, `install_tested`, `deep_review`, `maintainer_verified`.
 - Server confidence values: `low`, `medium`, `high`.
 - Tool confidence values: `unreviewed`, `low`, `medium`, `high`.
 - `indexed` means discoverable but not ranked.
-- `reviewed` and `maintainer_verified` can appear in public rankings.
-- `high_risk` can be reviewed and shown in overall/safety-watch contexts, but must not be presented as safest.
+- `source_reviewed` means public source/package/provider metadata was checked, but the listing is not ranked.
+- `install_tested` means install evidence is stronger than source review, but the listing is still not ranked.
+- Only `deep_review` and `maintainer_verified` review depths can appear in public leaderboards.
+- `high_risk` is a risk/status signal, not leaderboard eligibility; high-risk tools must not be presented as safest.
 
 Use these helpers from `src/lib/server-derived.ts`:
 
-- `isRankable(server)` for public rankings that include reviewed high-risk entries.
-- `isTrustedRankable(server)` for top trusted/safest contexts; it excludes high-risk, low-confidence, and unranked entries.
+- `isRankable(server)` for public rankings; it only allows `deep_review` and `maintainer_verified` review depths.
+- `isTrustedRankable(server)` for top trusted/safest contexts; it requires rankability, high confidence, and non-high risk.
 - `sourceLinksFor(server)` to build complete source link lists.
-- `reviewStatusLabel(server)` and `confidenceLabel(server)` for display labels.
+- `reviewDepthLabel(server)`, `reviewStatusLabel(server)`, and `confidenceLabel(server)` for display labels.
 
-Use `listTopSafeMcpTools()` from `src/lib/tool-store.ts` for confidence-gated top safe tool lists from `mcp_tools`. It only returns reviewed tools with non-null trust scores and medium/high confidence.
+Use `listTopSafeMcpTools()` from `src/lib/tool-store.ts` for confidence-gated top safe tool lists from `mcp_tools`. It should stay aligned with `isTrustedRankable` so shallow/source-reviewed rows do not appear as safest recommendations.
 
 ## Seed Dataset And Editorial State
 
 `src/lib/sample-data.ts` is large and acts as the current editorial dataset. It includes:
 
-- Deep reviewed servers such as GitHub MCP Server, Filesystem, Context7, Slack MCP Server, Postgres, Stripe MCP, Brave Search, Memory, Sequential Thinking, Fetch, Git, Time, Playwright MCP, Everything, Redis, Sentry, Google Drive, Notion, Puppeteer, SQLite, GitLab, Browserbase, Perplexity API Platform, and Exa.
+- The current leaderboard-depth review set is deliberately limited to 10 entries: GitHub MCP Server, Filesystem, Context7, Brave Search, Sequential Thinking, Fetch, Git, Time, Playwright MCP, and Everything.
+- Other manually curated or imported rows can be `source_reviewed` or `install_tested`; keep them searchable but out of leaderboards until they receive a deep review.
 - A larger indexed seed list from public MCP sources.
-- A `lightweightReviewedServers` transformation that promotes selected indexed seeds into reviewed records with medium confidence when enough public source/package/provider evidence exists.
+- A `lightweightReviewedServers` transformation that promotes selected indexed seeds into Source Reviewed records with medium confidence when enough public source/package/provider evidence exists.
 - `indexedServers` for remaining public-source rows that are discoverable but not manually reviewed.
 - Weekly reports including `weekly-best-mcp-service`, `safest-mcp-servers-for-codex`, `browser-automation-risk-report`, `auth-oauth-mcp-risk-report`, and `high-confidence-review-batch`.
 
@@ -259,9 +263,10 @@ Secrets rule:
 `db/schema.sql` creates:
 
 - `mcp_categories`: category metadata.
-- `mcp_servers`: reviewed server records with JSON source links, score, evidence, cautions, examples, transports, clients, status, confidence, risk, and verification fields.
-- `scoring_snapshots`: intended score history tied to `mcp_servers`.
-- `mcp_tools`: import/admin table with source URLs, GitHub/package URLs, status, trust score, confidence score, enrichment JSON, GitHub metadata, and timestamps.
+- `mcp_servers`: reviewed server records with JSON source links, score, evidence, cautions, examples, transports, clients, status, review depth, confidence, risk, and verification fields.
+- `scoring_snapshots`: score/evidence history tied to `mcp_servers`.
+- `mcp_tools`: import/admin table with source URLs, GitHub/package URLs, status, review depth, trust score, confidence score, enrichment JSON, GitHub metadata, and timestamps.
+- `mcp_tool_snapshots`: review metadata history tied to imported/admin tool rows.
 
 When modifying schema-related code:
 

@@ -5,7 +5,7 @@ import { ArrowUpRight, CircleAlert, Scale } from "lucide-react";
 import { ArenaShell } from "@/components/arena-shell";
 import { ComparisonViewTracker } from "@/components/comparison-view-tracker";
 import { getServer } from "@/lib/data";
-import { confidenceLabel, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, reviewDepthLabel, reviewStatusLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 import type { McpServer } from "@/lib/types";
 
@@ -55,6 +55,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 function SummaryCard({ server }: { server: McpServer }) {
+  const score = isRankable(server) ? overallScore(server.score) : reviewDepthLabel(server);
+
   return (
     <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
       <div className="flex items-start justify-between gap-4">
@@ -63,10 +65,11 @@ function SummaryCard({ server }: { server: McpServer }) {
           <h2 className="mt-2 font-serif text-3xl font-semibold">{server.name}</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">{server.tagline}</p>
         </div>
-        <span className="font-mono text-4xl font-semibold">{overallScore(server.score)}</span>
+        <span className="font-mono text-4xl font-semibold">{score}</span>
       </div>
       <div className="mt-5 grid gap-2 text-sm text-[var(--arena-muted)]">
         <span>Status: {reviewStatusLabel(server)}</span>
+        <span>Review depth: {reviewDepthLabel(server)}</span>
         <span>Confidence: {confidenceLabel(server)}</span>
         <span className="capitalize">Risk: {server.risk}</span>
         <span>Install: {server.installCommand}</span>

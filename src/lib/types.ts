@@ -6,6 +6,8 @@ export type ReviewStatus = "indexed" | "reviewed" | "maintainer_verified" | "dep
 
 export type ConfidenceLevel = "low" | "medium" | "high";
 
+export type ReviewDepth = "indexed" | "source_reviewed" | "install_tested" | "deep_review" | "maintainer_verified";
+
 export type SourceLink = {
   label: string;
   type: "repository" | "docs" | "package" | "registry" | "smithery" | "glama" | "website" | "source";
@@ -36,6 +38,7 @@ export type McpServer = {
   lastReviewed: string;
   evidenceUpdated: string;
   status: ReviewStatus;
+  reviewDepth: ReviewDepth;
   confidence: ConfidenceLevel;
   maintainerVerified: boolean;
   maintainerVerifiedAt?: string;
@@ -66,6 +69,7 @@ export type ReviewSnapshot = {
   status: ReviewStatus | "unreviewed" | "blocked";
   confidence: ConfidenceLevel | "unreviewed";
   risk: RiskLevel;
+  reviewDepth?: ReviewDepth;
   changeSummary: string;
   source: string;
   notes?: string;

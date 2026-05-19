@@ -200,7 +200,7 @@ export async function listTopSafeMcpTools(limit = 10) {
       )
       .filter((tool) => {
         const server = servers.find((item) => item.slug === tool.slug);
-        return server ? isTrustedRankable(server) : true;
+        return Boolean(server && isTrustedRankable(server));
       })
       .sort((a, b) => (b.trustScore ?? -1) - (a.trustScore ?? -1))
       .slice(0, limit);
@@ -218,7 +218,12 @@ export async function listTopSafeMcpTools(limit = 10) {
     limit ${limit}
   `) as ToolRow[];
 
-  return rows.map(rowToTool);
+  return rows
+    .map(rowToTool)
+    .filter((tool) => {
+      const server = servers.find((item) => item.slug === tool.slug);
+      return Boolean(server && isTrustedRankable(server));
+    });
 }
 
 export async function upsertMcpTools(inputs: McpToolInput[]) {

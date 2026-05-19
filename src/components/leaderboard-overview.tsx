@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Clock3, Trophy } from "lucide-react";
-import { confidenceLabel, isRankable, isTrustedRankable, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, isTrustedRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 import type { McpServer } from "@/lib/types";
 
@@ -53,7 +53,7 @@ export function LeaderboardOverview({ servers }: LeaderboardOverviewProps) {
                         {server.name}
                       </Link>
                       <p className="mt-1 text-xs text-[var(--arena-muted)]">
-                        {server.category} · {reviewStatusLabel(server)} · {confidenceLabel(server)} confidence
+                        {server.category} · {reviewDepthLabel(server)} · {confidenceLabel(server)} confidence
                       </p>
                     </td>
                     <td className="px-5 py-3 text-right font-mono text-sm font-semibold">

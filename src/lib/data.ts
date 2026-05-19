@@ -3,7 +3,7 @@ import { servers, weeklyReports } from "./sample-data";
 import { overallScore } from "./scoring";
 import { listMcpTools } from "./tool-store";
 import { packageNameFromUrl } from "./import-normalization";
-import type { ConfidenceLevel, McpServer, ReviewStatus, SourceLink, WeeklyReport } from "./types";
+import type { ConfidenceLevel, McpServer, ReviewDepth, ReviewStatus, SourceLink, WeeklyReport } from "./types";
 import type { McpTool } from "./tool-types";
 
 type ServerRow = {
@@ -20,6 +20,7 @@ type ServerRow = {
   evidence_updated: string;
   source_links: SourceLink[];
   status: ReviewStatus;
+  review_depth: ReviewDepth | null;
   confidence: ConfidenceLevel;
   maintainer_verified: boolean;
   maintainer_verified_at: string | null;
@@ -34,6 +35,7 @@ type ServerRow = {
 };
 
 let sqlClient: ReturnType<typeof neon> | null = null;
+let reviewDepthSchemaReady = false;
 
 function getSql() {
   if (!process.env.DATABASE_URL) return null;
@@ -41,7 +43,38 @@ function getSql() {
   return sqlClient;
 }
 
-function mapServer(row: ServerRow): McpServer {
+async function ensureReviewDepthSchema(sql: ReturnType<typeof neon>) {
+  if (reviewDepthSchemaReady) return;
+  await sql`alter table mcp_servers add column if not exists review_depth text not null default 'indexed'`;
+  await sql`alter table mcp_tools add column if not exists review_depth text not null default 'indexed'`;
+  reviewDepthSchemaReady = true;
+}
+
+function normalizeReviewDepth(
+  value: unknown,
+  status: ReviewStatus,
+  maintainerVerified = false,
+  fallback?: ReviewDepth,
+): ReviewDepth {
+  if (
+    value === "indexed" ||
+    value === "source_reviewed" ||
+    value === "install_tested" ||
+    value === "deep_review" ||
+    value === "maintainer_verified"
+  ) {
+    if (value !== "indexed" || status === "indexed") return value;
+    if (fallback) return fallback;
+    if (maintainerVerified || status === "maintainer_verified") return "maintainer_verified";
+    return "source_reviewed";
+  }
+
+  if (maintainerVerified || status === "maintainer_verified") return "maintainer_verified";
+  if (status === "reviewed") return fallback ?? "source_reviewed";
+  return "indexed";
+}
+
+function mapServer(row: ServerRow, fallback?: McpServer): McpServer {
   const server = {
     slug: row.slug,
     name: row.name,
@@ -61,6 +94,7 @@ function mapServer(row: ServerRow): McpServer {
     lastReviewed: row.last_reviewed,
     evidenceUpdated: row.evidence_updated || row.last_reviewed,
     status: row.status,
+    reviewDepth: normalizeReviewDepth(row.review_depth, row.status, row.maintainer_verified, fallback?.reviewDepth),
     confidence: row.confidence,
     maintainerVerified: row.maintainer_verified,
     maintainerVerifiedAt: row.maintainer_verified_at ?? undefined,
@@ -136,6 +170,7 @@ function mapToolToServer(tool: McpTool): McpServer {
   const lastSeenAt = typeof tool.enrichment?.lastSeenAt === "string" ? tool.enrichment.lastSeenAt.slice(0, 10) : importedAt;
   const sourceKind = typeof tool.enrichment?.sourceKind === "string" ? tool.enrichment.sourceKind : "public source";
   const status = toolStatusToServerStatus(tool);
+  const reviewDepth: ReviewDepth = status === "reviewed" ? "source_reviewed" : "indexed";
   const confidence = toolConfidenceToServerConfidence(tool);
   const packageName = packageNameFromUrl(tool.packageUrl);
   const trustScore = tool.trustScore ?? 0;
@@ -166,6 +201,7 @@ function mapToolToServer(tool: McpTool): McpServer {
     sourceProvider: tool.source,
     sourceKind,
     status,
+    reviewDepth,
     confidence,
     maintainerVerified: false,
     transports: [],
@@ -209,11 +245,13 @@ export async function getServers(): Promise<McpServer[]> {
     return [...merged.values()];
   }
 
+  await ensureReviewDepthSchema(sql);
+
   const rows = (await sql`
     select slug, name, category, tagline, source, package_name, install_command,
       repository_url, stars, to_char(last_reviewed, 'YYYY-MM-DD') as last_reviewed,
       to_char(evidence_updated, 'YYYY-MM-DD') as evidence_updated, source_links,
-      status, confidence, maintainer_verified, maintainer_verified_at::text,
+      status, review_depth, confidence, maintainer_verified, maintainer_verified_at::text,
       transports, clients, risk, score, signals, evidence, cautions, examples
     from mcp_servers
     order by (score->>'usefulness')::int desc, name asc
@@ -221,7 +259,7 @@ export async function getServers(): Promise<McpServer[]> {
 
   const merged = new Map(servers.map((server) => [server.slug, server]));
   for (const row of rows) {
-    const mapped = mapServer(row);
+    const mapped = mapServer(row, merged.get(row.slug));
     merged.set(mapped.slug, { ...(merged.get(mapped.slug) ?? mapped), ...mapped });
   }
   const adminTools = await listMcpTools("all");

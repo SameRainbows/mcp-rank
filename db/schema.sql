@@ -20,6 +20,8 @@ create table if not exists mcp_servers (
   evidence_updated date not null default current_date,
   status text not null default 'indexed'
     check (status in ('indexed', 'reviewed', 'maintainer_verified', 'deprecated', 'high_risk')),
+  review_depth text not null default 'indexed'
+    check (review_depth in ('indexed', 'source_reviewed', 'install_tested', 'deep_review', 'maintainer_verified')),
   confidence text not null default 'low'
     check (confidence in ('low', 'medium', 'high')),
   maintainer_verified boolean not null default false,
@@ -71,6 +73,8 @@ create table if not exists mcp_tools (
   license text not null default '',
   status text not null default 'unreviewed'
     check (status in ('unreviewed', 'reviewed', 'deprecated', 'blocked')),
+  review_depth text not null default 'indexed'
+    check (review_depth in ('indexed', 'source_reviewed', 'install_tested', 'deep_review', 'maintainer_verified')),
   trust_score integer check (trust_score is null or (trust_score >= 0 and trust_score <= 100)),
   confidence_score text not null default 'unreviewed'
     check (confidence_score in ('unreviewed', 'low', 'medium', 'high')),

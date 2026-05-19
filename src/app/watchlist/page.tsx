@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArenaShell } from "@/components/arena-shell";
 import { WatchlistPageClient } from "@/components/watchlist-page-client";
 import { getServers } from "@/lib/data";
-import { confidenceLabel, evidenceUpdatedAt, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 
 export const metadata: Metadata = {
@@ -38,8 +38,8 @@ export default async function WatchlistPage() {
               tagline: server.tagline,
               risk: server.risk,
               confidence: confidenceLabel(server),
-              status: reviewStatusLabel(server),
-              score: server.status === "indexed" ? "Indexed" : overallScore(server.score),
+              status: reviewDepthLabel(server),
+              score: isRankable(server) ? overallScore(server.score) : reviewDepthLabel(server),
               evidenceUpdated: evidenceUpdatedAt(server),
             }))}
           />

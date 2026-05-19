@@ -49,15 +49,15 @@ export default function MethodologyPage() {
           <h2 className="font-serif text-2xl font-semibold">Status and confidence rules</h2>
           <div className="mt-5 grid gap-4 text-sm leading-6 text-[var(--arena-muted)] sm:grid-cols-2">
             <div>
-              <h3 className="font-semibold text-[var(--arena-ink)]">Indexed is not ranked</h3>
+              <h3 className="font-semibold text-[var(--arena-ink)]">Review depth gates rankings</h3>
               <p className="mt-2">
-                Indexed servers may appear in search and server pages, but they are excluded from public leaderboards until reviewed.
+                Only Deep Review and Maintainer Verified entries appear in leaderboards. Indexed, Source Reviewed, and Install Tested listings remain searchable but unranked.
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-[var(--arena-ink)]">Safest lists require confidence</h3>
               <p className="mt-2">
-                Top trusted rankings exclude low-confidence tools and high-risk tools, even when the underlying server is useful.
+                Top trusted rankings require high confidence and exclude high-risk tools, even when the underlying server is useful.
               </p>
             </div>
             <div>
@@ -79,7 +79,7 @@ export default function MethodologyPage() {
           <h2 className="font-serif text-2xl font-semibold">Data sources</h2>
           <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
             MCP Rank indexes MCP servers from public registries, package metadata, directories, GitHub search,
-            and maintainer submissions. Rankings and trust labels are assigned only after MCP Rank review.
+            and maintainer submissions. Rankings are assigned only after Deep Review or Maintainer Verified review depth.
           </p>
           <ul className="mt-5 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
             {sources.map((source) => (

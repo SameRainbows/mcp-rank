@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, CheckCircle2, CircleAlert, Search, SlidersHorizontal } from "lucide-react";
-import { confidenceLabel, isRankable, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
 import type { ClientKey, McpServer, RiskLevel } from "@/lib/types";
 
@@ -45,7 +45,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
         <div>
           <h2 className="font-serif text-3xl font-semibold">MCP Leaderboard</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--arena-muted)]">
-            Ranked by reviewed evidence, install checks, compatibility, usefulness, and safety. Indexed-only tools are excluded from public rankings.
+            Ranked only after a Deep Review or Maintainer Verified review. Source Reviewed and Install Tested listings remain searchable, but are excluded from leaderboards.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -95,7 +95,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
               <th className="px-4 py-3">#</th>
               <th className="px-4 py-3">Server</th>
               <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Review</th>
+              <th className="px-4 py-3">Review depth</th>
               {Object.values(scoreLabels).map((label) => (
                 <th key={label} className="px-4 py-3">
                   {label}
@@ -128,7 +128,7 @@ export function RankingExplorer({ servers, compact = false }: RankingExplorerPro
                   </td>
                   <td className="px-4 py-4 text-sm text-[var(--arena-muted)]">{server.category}</td>
                   <td className="px-4 py-4 text-sm">
-                    <span className="block font-semibold">{reviewStatusLabel(server)}</span>
+                    <span className="block font-semibold">{reviewDepthLabel(server)}</span>
                     <span className="text-xs text-[var(--arena-muted)]">{confidenceLabel(server)} confidence</span>
                   </td>
                   {Object.keys(scoreLabels).map((key) => (

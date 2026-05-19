@@ -14,6 +14,14 @@ export const confidenceLabels = {
   high: "High",
 } as const;
 
+export const reviewDepthLabels = {
+  indexed: "Indexed",
+  source_reviewed: "Source Reviewed",
+  install_tested: "Install Tested",
+  deep_review: "Deep Review",
+  maintainer_verified: "Maintainer Verified",
+} as const;
+
 export function evidenceUpdatedAt(server: McpServer) {
   return server.evidenceUpdated || server.lastReviewed;
 }
@@ -26,15 +34,22 @@ export function confidenceLabel(server: McpServer) {
   return confidenceLabels[server.confidence] ?? "Low";
 }
 
+export function reviewDepthLabel(server: McpServer) {
+  return reviewDepthLabels[server.reviewDepth] ?? "Indexed";
+}
+
+export function isReviewedForLeaderboards(server: McpServer) {
+  return server.reviewDepth === "deep_review" || server.reviewDepth === "maintainer_verified";
+}
+
 export function isRankable(server: McpServer) {
-  return server.status === "reviewed" || server.status === "maintainer_verified" || server.status === "high_risk";
+  return isReviewedForLeaderboards(server);
 }
 
 export function isTrustedRankable(server: McpServer) {
   return (
     isRankable(server) &&
-    server.status !== "high_risk" &&
-    server.confidence !== "low" &&
+    server.confidence === "high" &&
     server.risk !== "high"
   );
 }

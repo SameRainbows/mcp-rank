@@ -122,10 +122,10 @@ export function WatchlistPageClient({ servers }: WatchlistPageClientProps) {
                 {server?.evidenceUpdated && <span>Evidence updated: {server.evidenceUpdated}</span>}
                 <span>Saved: {new Date(item.addedAt).toLocaleDateString()}</span>
               </div>
-              {(server?.status === "indexed" || item.status === "indexed") && (
+              {((server?.status ?? item.status) !== "Deep Review" && (server?.status ?? item.status) !== "Maintainer Verified") && (
                 <p className="mt-3 inline-flex items-center gap-2 rounded-md bg-[var(--arena-blue-soft)] px-3 py-2 text-xs font-semibold text-[var(--arena-muted)]">
                   <CircleAlert size={14} aria-hidden="true" />
-                  Discovery only until manual review is complete.
+                  Discovery only until a Deep Review is complete.
                 </p>
               )}
             </div>

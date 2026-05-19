@@ -1,5 +1,5 @@
 import { getServer, getServers, getWeeklyReport } from "./data";
-import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewStatusLabel, serverPath } from "./server-derived";
+import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewDepthLabel, reviewStatusLabel, serverPath } from "./server-derived";
 import { overallScore, scoreLabels, scoreWeights } from "./scoring";
 import { listTopSafeMcpTools } from "./tool-store";
 import type { ClientKey, McpServer, RiskLevel } from "./types";
@@ -170,6 +170,7 @@ function compactServer(server: McpServer) {
     lastReviewed: server.lastReviewed,
     evidenceUpdated: evidenceUpdatedAt(server),
     status: reviewStatusLabel(server),
+    reviewDepth: reviewDepthLabel(server),
     confidence: confidenceLabel(server),
     pagePath: serverPath(server),
     tagline: server.tagline,
@@ -280,7 +281,9 @@ export async function executeMcpChatTool(name: string, args: Record<string, unkn
       scoreWeights,
       confidenceRules: [
         "Trust score and confidence score are separate.",
-        "Top safest lists must exclude unreviewed and low-confidence rows.",
+        "Leaderboards include only Deep Review or Maintainer Verified entries.",
+        "Source Reviewed and Install Tested rows are discovery evidence, not ranked recommendations.",
+        "Top trusted lists must exclude low-confidence and high-risk rows.",
         "Use list_top_safe_tools for confidence-gated safety recommendations from mcp_tools.",
         "If MCP Rank has no reviewed evidence for a server, say: I don't have enough reviewed evidence yet.",
       ],

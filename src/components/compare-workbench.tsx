@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, CircleAlert, Scale } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { confidenceLabel, reviewStatusLabel } from "@/lib/server-derived";
+import { confidenceLabel, isRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
 import type { McpServer } from "@/lib/types";
 import { WatchlistButton } from "@/components/watchlist-button";
@@ -37,7 +37,7 @@ const presets = [
 ];
 
 function scoreText(server: McpServer) {
-  return server.status === "indexed" ? "Indexed" : String(overallScore(server.score));
+  return isRankable(server) ? String(overallScore(server.score)) : reviewDepthLabel(server);
 }
 
 function evidenceText(server: McpServer) {
@@ -60,7 +60,7 @@ function ServerSnapshot({ server }: { server: McpServer }) {
       </div>
       <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
         <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 py-1">
-          {reviewStatusLabel(server)}
+          {reviewDepthLabel(server)}
         </span>
         <span className="rounded-md border border-[var(--arena-line)] px-2 py-1">
           {confidenceLabel(server)} confidence
@@ -103,7 +103,7 @@ function ServerSnapshot({ server }: { server: McpServer }) {
             category: server.category,
             risk: server.risk,
             confidence: confidenceLabel(server),
-            status: reviewStatusLabel(server),
+            status: reviewDepthLabel(server),
             score: scoreText(server),
           }}
         />
@@ -141,7 +141,7 @@ export function CompareWorkbench({ servers }: CompareWorkbenchProps) {
           <h2 className="mt-4 font-serif text-3xl font-semibold">Compare servers by niche, score, and risk.</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
             Use this for practical installation decisions: pick two servers in the same workflow, then inspect score,
-            confidence, source evidence, and the caution that should shape rollout.
+            confidence, review depth, source evidence, and the caution that should shape rollout.
           </p>
         </div>
         <Link
@@ -206,7 +206,7 @@ export function CompareWorkbench({ servers }: CompareWorkbenchProps) {
         <h3 className="font-serif text-2xl font-semibold">Decision note</h3>
         <p className="mt-3 text-sm leading-7 text-[var(--arena-muted)]">
           Prefer the higher-confidence, lower-risk server when both satisfy the same workflow. If either side is indexed
-          only, treat the comparison as discovery, not a recommendation, until source evidence and a manual review are complete.
+          only, treat the comparison as discovery, not a leaderboard recommendation, until a deep review is complete.
         </p>
       </div>
     </section>

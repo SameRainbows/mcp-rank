@@ -10,7 +10,7 @@ import { TrackedSourceLink } from "@/components/tracked-source-link";
 import { WatchlistButton } from "@/components/watchlist-button";
 import { getServer, getServers } from "@/lib/data";
 import { listReviewSnapshots } from "@/lib/review-snapshots";
-import { confidenceLabel, evidenceUpdatedAt, reviewStatusLabel, sourceLinksFor } from "@/lib/server-derived";
+import { confidenceLabel, evidenceUpdatedAt, isRankable, reviewDepthLabel, reviewStatusLabel, sourceLinksFor } from "@/lib/server-derived";
 import { overallScore, scoreLabels } from "@/lib/scoring";
 import type { ReviewSnapshot } from "@/lib/types";
 
@@ -59,7 +59,7 @@ export default async function ServerPage({ params }: PageProps) {
               <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">{server.tagline}</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2.5 py-1 text-sm font-semibold text-[var(--arena-ink)]">
-                  Indexed
+                  {reviewDepthLabel(server)}
                 </span>
                 <span className="rounded-md border border-[var(--arena-line)] bg-white px-2.5 py-1 text-sm font-medium text-[var(--arena-muted)]">
                   Low confidence
@@ -84,7 +84,7 @@ export default async function ServerPage({ params }: PageProps) {
                   category: server.category,
                   risk: server.risk,
                   confidence: confidenceLabel(server),
-                  status: reviewStatusLabel(server),
+                  status: reviewDepthLabel(server),
                   score: "Indexed",
                 }}
               />
@@ -146,7 +146,7 @@ export default async function ServerPage({ params }: PageProps) {
             <h1 className="mt-3 font-serif text-5xl font-semibold leading-tight">{server.name}</h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--arena-muted)]">{server.tagline}</p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {[reviewStatusLabel(server), `${confidenceLabel(server)} confidence`, `${server.risk} risk`].map((label) => (
+              {[reviewDepthLabel(server), reviewStatusLabel(server), `${confidenceLabel(server)} confidence`, `${server.risk} risk`].map((label) => (
                 <span
                   key={label}
                   className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2.5 py-1 text-sm font-semibold capitalize text-[var(--arena-ink)]"
@@ -166,11 +166,16 @@ export default async function ServerPage({ params }: PageProps) {
           </div>
           <aside className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-[var(--arena-muted)]">MCP Rank score</span>
-              <span className="font-mono text-5xl font-semibold">{total}</span>
+              <span className="text-sm font-semibold text-[var(--arena-muted)]">
+                {isRankable(server) ? "MCP Rank score" : "Review depth"}
+              </span>
+              <span className={`font-mono font-semibold ${isRankable(server) ? "text-5xl" : "text-2xl text-right"}`}>
+                {isRankable(server) ? total : reviewDepthLabel(server)}
+              </span>
             </div>
             <div className="mt-5 grid gap-2 text-sm text-[var(--arena-muted)]">
               <span>Status: {reviewStatusLabel(server)}</span>
+              <span>Review depth: {reviewDepthLabel(server)}</span>
               <span>Confidence: {confidenceLabel(server)}</span>
               <span>Last reviewed: {server.lastReviewed || "Not manually reviewed yet"}</span>
               <span>Evidence updated: {evidenceUpdatedAt(server)}</span>
@@ -185,8 +190,8 @@ export default async function ServerPage({ params }: PageProps) {
                 category: server.category,
                 risk: server.risk,
                 confidence: confidenceLabel(server),
-                status: reviewStatusLabel(server),
-                score: total,
+                status: reviewDepthLabel(server),
+                score: isRankable(server) ? total : reviewDepthLabel(server),
               }}
             />
             <ClaimListingLink slug={server.slug} />
@@ -196,7 +201,9 @@ export default async function ServerPage({ params }: PageProps) {
         <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]">
           <div className="grid gap-8">
             <section className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
-              <h2 className="font-serif text-2xl font-semibold">Score breakdown</h2>
+              <h2 className="font-serif text-2xl font-semibold">
+                {isRankable(server) ? "Score breakdown" : "Unranked score draft"}
+              </h2>
               <div className="mt-5 grid gap-4">
                 {Object.entries(scoreLabels).map(([key, label]) => {
                   const value = server.score[key as keyof typeof server.score];
@@ -218,7 +225,7 @@ export default async function ServerPage({ params }: PageProps) {
               </div>
             </section>
 
-            <EvidenceHistoryCard snapshots={reviewSnapshots} />
+            <EvidenceHistoryCard snapshots={reviewSnapshots} rankable={isRankable(server)} />
 
             <section className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
               <h2 className="font-serif text-2xl font-semibold">Evidence notes</h2>
@@ -278,10 +285,10 @@ export default async function ServerPage({ params }: PageProps) {
               <div className="mt-4 grid gap-3 text-sm leading-6 text-[var(--arena-muted)]">
                 <div className="flex gap-3">
                   <ShieldCheck className="mt-1 shrink-0 text-[var(--arena-green)]" size={17} />
-                  <span>{reviewStatusLabel(server)} with {confidenceLabel(server).toLowerCase()} confidence.</span>
+                  <span>{reviewDepthLabel(server)} with {confidenceLabel(server).toLowerCase()} confidence.</span>
                 </div>
                 <p>
-                  Top safest rankings exclude low-confidence and unreviewed tools. This page is a review signal, not formal certification.
+                  Leaderboards include only Deep Review or Maintainer Verified entries. Source Reviewed and Install Tested pages remain visible for evaluation but are not ranked recommendations.
                 </p>
               </div>
             </section>
@@ -349,7 +356,15 @@ function scoreMovement(snapshot: ReviewSnapshot) {
   return `${snapshot.previousOverallScore} -> ${snapshot.overallScore}`;
 }
 
-function EvidenceHistoryCard({ snapshots, indexed = false }: { snapshots: ReviewSnapshot[]; indexed?: boolean }) {
+function EvidenceHistoryCard({
+  snapshots,
+  indexed = false,
+  rankable = false,
+}: {
+  snapshots: ReviewSnapshot[];
+  indexed?: boolean;
+  rankable?: boolean;
+}) {
   if (indexed || snapshots.length === 0) {
     return (
       <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
@@ -369,6 +384,11 @@ function EvidenceHistoryCard({ snapshots, indexed = false }: { snapshots: Review
           <p className="mt-2 text-sm leading-6 text-[var(--arena-muted)]">
             Review snapshots show why the current score, confidence, and risk labels changed over time.
           </p>
+          {!rankable && (
+            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--arena-muted)]">
+              This review depth is not eligible for MCP Rank leaderboards until a Deep Review is complete.
+            </p>
+          )}
         </div>
         <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--arena-muted)]">
           {snapshots[0]?.source.replace(/_/g, " ")}

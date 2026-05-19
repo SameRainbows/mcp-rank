@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mcp-rank-tau.vercel.app"),
+  metadataBase: new URL("https://mcprank.vercel.app"),
   title: {
     default: "MCP Rank",
     template: "%s | MCP Rank",

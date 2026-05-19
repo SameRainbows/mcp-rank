@@ -11,10 +11,10 @@ type BadgeEmbedsProps = {
 
 export function BadgeEmbeds({ serverName, serverSlug, maintainerVerified }: BadgeEmbedsProps) {
   const badges = [
-    { label: "Listed on MCP Rank", value: `[![Listed on MCP Rank](https://mcp-rank-tau.vercel.app/badges/listed.svg)](https://mcp-rank-tau.vercel.app/servers/${serverSlug})` },
-    { label: "Reviewed by MCP Rank", value: `[![Reviewed by MCP Rank](https://mcp-rank-tau.vercel.app/badges/reviewed.svg)](https://mcp-rank-tau.vercel.app/servers/${serverSlug})` },
+    { label: "Listed on MCP Rank", value: `[![Listed on MCP Rank](https://mcprank.vercel.app/badges/listed.svg)](https://mcprank.vercel.app/servers/${serverSlug})` },
+    { label: "Reviewed by MCP Rank", value: `[![Reviewed by MCP Rank](https://mcprank.vercel.app/badges/reviewed.svg)](https://mcprank.vercel.app/servers/${serverSlug})` },
     ...(maintainerVerified
-      ? [{ label: "MCP Rank Verified", value: `[![MCP Rank Verified](https://mcp-rank-tau.vercel.app/badges/verified.svg)](https://mcp-rank-tau.vercel.app/servers/${serverSlug})` }]
+      ? [{ label: "MCP Rank Verified", value: `[![MCP Rank Verified](https://mcprank.vercel.app/badges/verified.svg)](https://mcprank.vercel.app/servers/${serverSlug})` }]
       : []),
   ];
 

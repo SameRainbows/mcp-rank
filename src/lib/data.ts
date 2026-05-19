@@ -37,6 +37,10 @@ type ServerRow = {
 let sqlClient: ReturnType<typeof neon> | null = null;
 let reviewDepthSchemaReady = false;
 
+function isRecoverableDatabaseError(error: unknown) {
+  return error instanceof Error && /exceeded the data transfer quota|HTTP status 402|DATABASE_URL/i.test(error.message);
+}
+
 function getSql() {
   if (!process.env.DATABASE_URL) return null;
   if (!sqlClient) sqlClient = neon(process.env.DATABASE_URL);
@@ -245,9 +249,10 @@ export async function getServers(): Promise<McpServer[]> {
     return [...merged.values()];
   }
 
-  await ensureReviewDepthSchema(sql);
+  try {
+    await ensureReviewDepthSchema(sql);
 
-  const rows = (await sql`
+    const rows = (await sql`
     select slug, name, category, tagline, source, package_name, install_command,
       repository_url, stars, to_char(last_reviewed, 'YYYY-MM-DD') as last_reviewed,
       to_char(evidence_updated, 'YYYY-MM-DD') as evidence_updated, source_links,
@@ -257,17 +262,21 @@ export async function getServers(): Promise<McpServer[]> {
     order by (score->>'usefulness')::int desc, name asc
   `) as ServerRow[];
 
-  const merged = new Map(servers.map((server) => [server.slug, server]));
-  for (const row of rows) {
-    const mapped = mapServer(row, merged.get(row.slug));
-    merged.set(mapped.slug, { ...(merged.get(mapped.slug) ?? mapped), ...mapped });
-  }
-  const adminTools = await listMcpTools("all");
-  for (const tool of adminTools) {
-    if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
-  }
+    const merged = new Map(servers.map((server) => [server.slug, server]));
+    for (const row of rows) {
+      const mapped = mapServer(row, merged.get(row.slug));
+      merged.set(mapped.slug, { ...(merged.get(mapped.slug) ?? mapped), ...mapped });
+    }
+    const adminTools = await listMcpTools("all");
+    for (const tool of adminTools) {
+      if (!merged.has(tool.slug)) merged.set(tool.slug, mapToolToServer(tool));
+    }
 
-  return [...merged.values()];
+    return [...merged.values()];
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    return servers;
+  }
 }
 
 export async function getServer(slug: string) {

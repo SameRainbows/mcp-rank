@@ -186,6 +186,10 @@ const seedTools: McpTool[] = servers.map((server) =>
 
 const memoryTools = new Map<string, McpTool>(seedTools.map((tool) => [tool.slug, tool]));
 
+function isRecoverableDatabaseError(error: unknown) {
+  return error instanceof Error && /exceeded the data transfer quota|HTTP status 402|DATABASE_URL/i.test(error.message);
+}
+
 export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
   const sql = getSql();
   if (!sql) {
@@ -193,11 +197,12 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
     return status && status !== "all" ? tools.filter((tool) => tool.status === status) : tools;
   }
 
-  await ensureToolSchema(sql);
+  try {
+    await ensureToolSchema(sql);
 
-  const rows =
-    status && status !== "all"
-      ? ((await sql`
+    const rows =
+      status && status !== "all"
+        ? ((await sql`
           select name, slug, description, category, source, source_url, github_url, package_url,
             install_command, stars, last_commit::text, license, status, review_depth, trust_score,
             confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
@@ -205,7 +210,7 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
           where status = ${status}
           order by coalesce(trust_score, -1) desc, name asc
         `) as ToolRow[])
-      : ((await sql`
+        : ((await sql`
           select name, slug, description, category, source, source_url, github_url, package_url,
             install_command, stars, last_commit::text, license, status, review_depth, trust_score,
             confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
@@ -213,7 +218,12 @@ export async function listMcpTools(status?: "reviewed" | "unreviewed" | "all") {
           order by coalesce(trust_score, -1) desc, name asc
         `) as ToolRow[]);
 
-  return rows.map(rowToTool);
+    return rows.map(rowToTool);
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    const tools = [...memoryTools.values()];
+    return status && status !== "all" ? tools.filter((tool) => tool.status === status) : tools;
+  }
 }
 
 export async function searchMcpTools(query = "", limit = 200) {
@@ -231,11 +241,12 @@ export async function searchMcpTools(query = "", limit = 200) {
       .slice(0, safeLimit);
   }
 
-  await ensureToolSchema(sql);
+  try {
+    await ensureToolSchema(sql);
 
-  const pattern = `%${normalizedQuery}%`;
-  const rows = normalizedQuery
-    ? ((await sql`
+    const pattern = `%${normalizedQuery}%`;
+    const rows = normalizedQuery
+      ? ((await sql`
         select name, slug, description, category, source, source_url, github_url, package_url,
           install_command, stars, last_commit::text, license, status, review_depth, trust_score,
           confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
@@ -258,7 +269,7 @@ export async function searchMcpTools(query = "", limit = 200) {
           name asc
         limit ${safeLimit}
       `) as ToolRow[])
-    : ((await sql`
+      : ((await sql`
         select name, slug, description, category, source, source_url, github_url, package_url,
           install_command, stars, last_commit::text, license, status, review_depth, trust_score,
           confidence_score, open_issues, readme_length, last_reviewed_at::text, enrichment
@@ -277,7 +288,17 @@ export async function searchMcpTools(query = "", limit = 200) {
         limit ${safeLimit}
       `) as ToolRow[]);
 
-  return rows.map(rowToTool);
+    return rows.map(rowToTool);
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    const tools = [...memoryTools.values()];
+    return tools
+      .filter((tool) => {
+        if (!normalizedQuery) return true;
+        return `${tool.name} ${tool.description} ${tool.category} ${tool.source}`.toLowerCase().includes(normalizedQuery);
+      })
+      .slice(0, safeLimit);
+  }
 }
 
 export async function listTopSafeMcpTools(limit = 10) {

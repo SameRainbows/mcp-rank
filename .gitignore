@@ -45,3 +45,4 @@ next-env.d.ts
 scripts/.glama-import-state*.json
 
 .vercel
+.env*.local

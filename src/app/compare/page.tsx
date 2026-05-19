@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { ArenaShell } from "@/components/arena-shell";
 import { CompareWorkbench } from "@/components/compare-workbench";
 import { getServers } from "@/lib/data";
+import { isRankable } from "@/lib/server-derived";
 
 export const metadata: Metadata = {
   title: "Compare MCP Servers",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CompareIndexPage() {
-  const servers = await getServers();
+  const servers = (await getServers()).filter(isRankable);
 
   return (
     <ArenaShell mode="Compare">

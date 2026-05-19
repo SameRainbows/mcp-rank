@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "Search MCP servers by workflow, risk signal, package, and client compatibility.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function SearchPage() {
   const servers = await getServers();
 

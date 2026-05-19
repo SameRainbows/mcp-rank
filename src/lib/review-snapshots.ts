@@ -44,6 +44,17 @@ function getSql() {
   return sqlClient;
 }
 
+function isRecoverableDatabaseError(error: unknown) {
+  return error instanceof Error && /exceeded the data transfer quota|HTTP status 402|DATABASE_URL/i.test(error.message);
+}
+
+function fallbackSnapshots(slug: string, server: McpServer | undefined, limit: number) {
+  const snapshots = [...(memorySnapshots.get(slug) ?? [])];
+  const seedServer = server ?? servers.find((item) => item.slug === slug);
+  const seedSnapshot = seedServer ? fallbackSeedSnapshot(seedServer) : null;
+  return [...snapshots, ...(seedSnapshot ? [seedSnapshot] : [])].slice(0, limit);
+}
+
 async function ensureSnapshotSchema(sql: ReturnType<typeof neon>) {
   if (snapshotSchemaReady) return;
 
@@ -218,15 +229,13 @@ export async function createMcpToolSnapshot(
 export async function listReviewSnapshots(slug: string, server?: McpServer, limit = 6): Promise<ReviewSnapshot[]> {
   const sql = getSql();
   if (!sql) {
-    const snapshots = [...(memorySnapshots.get(slug) ?? [])];
-    const seedServer = server ?? servers.find((item) => item.slug === slug);
-    const seedSnapshot = seedServer ? fallbackSeedSnapshot(seedServer) : null;
-    return [...snapshots, ...(seedSnapshot ? [seedSnapshot] : [])].slice(0, limit);
+    return fallbackSnapshots(slug, server, limit);
   }
 
-  await ensureSnapshotSchema(sql);
+  try {
+    await ensureSnapshotSchema(sql);
 
-  const serverRowsPromise = sql`
+    const serverRowsPromise = sql`
       select id, server_slug, score, stars, notes, overall_score, previous_overall_score,
         status, confidence, risk, change_summary, source, captured_at::text
       from scoring_snapshots
@@ -243,16 +252,18 @@ export async function listReviewSnapshots(slug: string, server?: McpServer, limi
       limit ${limit}
     ` as unknown as Promise<ToolSnapshotRow[]>;
 
-  const [serverRows, toolRows] = await Promise.all([serverRowsPromise, toolRowsPromise]);
+    const [serverRows, toolRows] = await Promise.all([serverRowsPromise, toolRowsPromise]);
 
-  const snapshots = [
-    ...serverRows.map((row) => mapServerSnapshot(row, server)),
-    ...toolRows.map(mapToolSnapshot),
-  ].sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt));
+    const snapshots = [
+      ...serverRows.map((row) => mapServerSnapshot(row, server)),
+      ...toolRows.map(mapToolSnapshot),
+    ].sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt));
 
-  if (snapshots.length) return snapshots.slice(0, limit);
+    if (snapshots.length) return snapshots.slice(0, limit);
 
-  const seedServer = server ?? servers.find((item) => item.slug === slug);
-  const seedSnapshot = seedServer ? fallbackSeedSnapshot(seedServer) : null;
-  return seedSnapshot ? [seedSnapshot] : [];
+    return fallbackSnapshots(slug, server, limit);
+  } catch (error) {
+    if (!isRecoverableDatabaseError(error)) throw error;
+    return fallbackSnapshots(slug, server, limit);
+  }
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminTools } from "@/components/admin-tools";
 import { ArenaShell } from "@/components/arena-shell";
 import { hasAdminAccess } from "@/lib/admin-auth";
+import { listClaimSubmissions } from "@/lib/claim-store";
 import { listMcpTools } from "@/lib/tool-store";
 
 export const metadata: Metadata = {
@@ -32,12 +33,17 @@ export default async function AdminPage({ searchParams }: PageProps) {
     );
   }
 
-  const tools = await listMcpTools("all");
+  const [tools, claimResult] = await Promise.all([listMcpTools("all"), listClaimSubmissions("all")]);
 
   return (
     <ArenaShell mode="Admin">
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <AdminTools initialTools={tools} persisted={Boolean(process.env.DATABASE_URL)} initialAdminToken={token ?? ""} />
+        <AdminTools
+          initialTools={tools}
+          initialClaims={claimResult.claims}
+          persisted={Boolean(process.env.DATABASE_URL)}
+          initialAdminToken={token ?? ""}
+        />
       </main>
     </ArenaShell>
   );

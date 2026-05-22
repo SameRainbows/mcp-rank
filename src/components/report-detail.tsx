@@ -108,7 +108,7 @@ export async function ReportDetail({ slug }: ReportDetailProps) {
 
         <section className="mt-8 grid gap-6 md:grid-cols-2">
           <div className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
-            <h2 className="font-serif text-2xl font-semibold">{report.newlyReviewed ? "Source-reviewed batch" : "Newly indexed"}</h2>
+            <h2 className="font-serif text-2xl font-semibold">{report.newlyReviewed ? "Reviewed batch" : "Newly indexed"}</h2>
             <div className="mt-4 grid gap-2 text-sm text-[var(--arena-muted)]">
               {discoveryList.map((item) => <p key={item}>{item}</p>)}
             </div>

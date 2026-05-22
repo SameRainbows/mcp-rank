@@ -13,7 +13,7 @@ const navItems = [
   { href: "/rankings", label: "Leaderboard", icon: ListOrdered },
   { href: "/search", label: "Search", icon: Search },
   { href: "/compare", label: "Compare", icon: Scale },
-  { href: "/reports/weekly-best-mcp-service", label: "Reports", icon: FileText },
+  { href: "/reports", label: "Reports", icon: FileText },
   { href: "/submit", label: "Submit", icon: Send },
 ];
 
@@ -67,7 +67,7 @@ export function ArenaShell({ children }: ArenaShellProps) {
               <Link href="/compare" className="hover:text-[var(--arena-ink)]">
                 Compare
               </Link>
-              <Link href="/reports/weekly-best-mcp-service" className="hover:text-[var(--arena-ink)]">
+              <Link href="/reports" className="hover:text-[var(--arena-ink)]">
                 Reports
               </Link>
               <Link href="/about" className="hover:text-[var(--arena-ink)]">

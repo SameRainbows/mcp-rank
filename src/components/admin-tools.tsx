@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Database, FileUp, RefreshCw, Save, ShieldCheck } from "lucide-react";
+import type { ClaimSubmission, ClaimSubmissionStatus } from "@/lib/claim-store";
 import type { ConfidenceScore, ImportResultSummary, ImportSourceProvider, McpTool, McpToolInput, ToolStatus } from "@/lib/tool-types";
 import type { ReviewDepth } from "@/lib/types";
 
@@ -30,15 +31,18 @@ type StatusFilter = "all" | "reviewed" | "unreviewed";
 type QueueSourceFilter = "all" | "glama" | "official" | "smithery" | "github" | "manual";
 type QueueEvidenceFilter = "all" | "github" | "package" | "missing_source";
 type QueueSort = "priority" | "stars" | "last_seen" | "name";
+type ClaimStatusFilter = ClaimSubmissionStatus | "all";
 
 type AdminToolsProps = {
   initialTools: McpTool[];
+  initialClaims: ClaimSubmission[];
   persisted: boolean;
   initialAdminToken?: string;
 };
 
-export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: AdminToolsProps) {
+export function AdminTools({ initialTools, initialClaims, persisted, initialAdminToken = "" }: AdminToolsProps) {
   const [tools, setTools] = useState<McpTool[]>(initialTools);
+  const [claims, setClaims] = useState<ClaimSubmission[]>(initialClaims);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [message, setMessage] = useState(
     persisted ? "Database persistence active." : "Private seed-data mode active.",
@@ -56,6 +60,7 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
   const [importQuery, setImportQuery] = useState("");
   const [importCsv, setImportCsv] = useState("");
   const [importPreview, setImportPreview] = useState<ImportResultSummary | null>(null);
+  const [claimFilter, setClaimFilter] = useState<ClaimStatusFilter>("all");
 
   function adminHeaders() {
     return {
@@ -73,8 +78,38 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
     setLoading(false);
   }
 
+  async function loadClaims(nextFilter = claimFilter) {
+    const response = await fetch(`/api/admin/claims?status=${nextFilter}`, { cache: "no-store", headers: adminHeaders() });
+    const data = (await response.json()) as { claims?: ClaimSubmission[]; persisted?: boolean; error?: string };
+    if (!response.ok) {
+      setMessage(data.error ?? "Could not load claim submissions.");
+      return;
+    }
+    setClaims(data.claims ?? []);
+    setMessage(data.persisted ? "Claim submissions loaded." : "Claim storage is not available in this environment.");
+  }
+
+  async function patchClaim(id: number, status: ClaimSubmissionStatus) {
+    const response = await fetch(`/api/admin/claims/${id}`, {
+      method: "PATCH",
+      headers: adminHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    const data = (await response.json()) as { claim?: ClaimSubmission; error?: string };
+    if (!response.ok || !data.claim) {
+      setMessage(data.error ?? "Could not update claim submission.");
+      return;
+    }
+    setClaims((current) => current.map((claim) => (claim.id === id ? data.claim! : claim)));
+    setMessage(`Claim ${id} marked ${status}. This does not change Maintainer Verified labels.`);
+  }
+
   const reviewedCount = useMemo(() => tools.filter((tool) => tool.status === "reviewed").length, [tools]);
   const unreviewedCount = useMemo(() => tools.filter((tool) => tool.status === "unreviewed").length, [tools]);
+  const filteredClaims = useMemo(
+    () => (claimFilter === "all" ? claims : claims.filter((claim) => claim.status === claimFilter)),
+    [claimFilter, claims],
+  );
   function toolReviewState(tool: McpTool) {
     const state = typeof tool.enrichment?.reviewQueueState === "string" ? tool.enrichment.reviewQueueState : "needs_review";
     return state.replace(/_/g, " ");
@@ -304,6 +339,121 @@ export function AdminTools({ initialTools, persisted, initialAdminToken = "" }: 
           placeholder="Paste token for imports and edits"
           className="h-10 min-w-72 rounded-md border border-[var(--arena-line)] bg-white px-3 text-sm"
         />
+      </section>
+
+      <section className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-[var(--arena-blue)]">Maintainer claims and corrections</div>
+            <h2 className="mt-2 font-serif text-3xl font-semibold">Claim review queue</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
+              Review public claim, correction, broken-source, and verification requests. Accepting a request records admin triage only;
+              it never marks a listing Maintainer Verified by itself.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadClaims(claimFilter)}
+            className="rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold hover:bg-[var(--arena-blue-soft)]"
+          >
+            Refresh claims
+          </button>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-[240px_1fr]">
+          <label className="grid gap-1 text-xs font-semibold text-[var(--arena-muted)]">
+            Status
+            <select
+              value={claimFilter}
+              onChange={(event) => {
+                const nextFilter = event.target.value as ClaimStatusFilter;
+                setClaimFilter(nextFilter);
+                void loadClaims(nextFilter);
+              }}
+              className="h-9 rounded-md border border-[var(--arena-line)] bg-white px-2 text-sm text-[var(--arena-ink)]"
+            >
+              <option value="all">All statuses</option>
+              <option value="new">New</option>
+              <option value="triaged">Triaged</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            {(["new", "triaged", "accepted", "rejected"] as const).map((status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => {
+                  setClaimFilter(status);
+                  void loadClaims(status);
+                }}
+                className="rounded-md border border-[var(--arena-line)] px-3 py-2 text-left capitalize hover:bg-[var(--arena-blue-soft)]"
+              >
+                {status}
+                <span className="block font-mono text-xl">
+                  {claims.filter((claim) => claim.status === status).length}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          {filteredClaims.map((claim) => (
+            <article key={claim.id} className="rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold">{claim.listingName || claim.slug || `Claim ${claim.id}`}</h3>
+                  <p className="mt-1 text-xs text-[var(--arena-muted)]">
+                    {claim.claimType.replace(/_/g, " ")} by {claim.contactName} · {claim.role.replace(/_/g, " ")}
+                  </p>
+                </div>
+                <span className="rounded-md border border-[#b9ddec] bg-[#edf8fc] px-2 py-1 text-xs font-semibold capitalize">
+                  {claim.status}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-1 text-xs leading-5 text-[var(--arena-muted)]">
+                <span>Slug: <span className="font-mono">{claim.slug || "not provided"}</span></span>
+                <span>Email: {claim.contactEmail}</span>
+                <span>Created: {claim.createdAt.slice(0, 10)}</span>
+              </div>
+              {claim.message && <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">{claim.message}</p>}
+              {claim.evidenceUrls.length > 0 && (
+                <div className="mt-3 grid gap-1 text-xs">
+                  {claim.evidenceUrls.map((url) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer" className="truncate font-semibold text-[var(--arena-blue)]">
+                      {url}
+                    </a>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {claim.slug && (
+                  <Link
+                    href={`/servers/${claim.slug}`}
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-xs font-semibold"
+                  >
+                    Open listing
+                  </Link>
+                )}
+                {(["triaged", "accepted", "rejected"] as const).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => void patchClaim(claim.id, status)}
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-2 text-xs font-semibold capitalize"
+                  >
+                    Mark {status}
+                  </button>
+                ))}
+              </div>
+            </article>
+          ))}
+          {filteredClaims.length === 0 && (
+            <div className="rounded-lg border border-dashed border-[var(--arena-line)] p-6 text-sm text-[var(--arena-muted)]">
+              No claim submissions match this filter yet.
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="grid gap-3 rounded-lg border border-[var(--arena-line)] bg-white p-4 sm:grid-cols-[1fr_420px]">

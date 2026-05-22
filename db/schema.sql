@@ -106,3 +106,24 @@ create table if not exists mcp_tool_snapshots (
 
 create index if not exists mcp_tool_snapshots_tool_captured_idx
   on mcp_tool_snapshots(tool_slug, captured_at desc);
+
+create table if not exists claim_submissions (
+  id bigserial primary key,
+  slug text not null default '',
+  listing_name text not null default '',
+  contact_name text not null default '',
+  contact_email text not null default '',
+  role text not null default 'maintainer'
+    check (role in ('maintainer', 'contributor', 'user', 'company_representative')),
+  claim_type text not null default 'claim'
+    check (claim_type in ('claim', 'correction', 'broken_source', 'maintainer_verification')),
+  evidence_urls jsonb not null default '[]'::jsonb,
+  message text not null default '',
+  status text not null default 'new'
+    check (status in ('new', 'triaged', 'accepted', 'rejected')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists claim_submissions_status_idx on claim_submissions(status);
+create index if not exists claim_submissions_slug_idx on claim_submissions(slug);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ArenaShell } from "@/components/arena-shell";
+import { ClaimSubmissionForm } from "@/components/claim-submission-form";
 
 export const metadata: Metadata = {
   title: "Submit MCP Server",
@@ -12,10 +13,6 @@ type PageProps = {
 
 export default async function SubmitPage({ searchParams }: PageProps) {
   const { claim } = await searchParams;
-  const subject = claim ? `Claim MCP Rank listing: ${claim}` : "Submit MCP server for MCP Rank review";
-  const body = claim
-    ? `Listing to claim: ${claim}%0AName:%0ARole/project:%0AEvidence or maintainer links:%0A`
-    : "Server name:%0ARepository or package URL:%0AMaintainer email:%0AInstall command:%0AWhy it should be reviewed:%0A";
   const outreachSubject = "MCP Rank listing verification";
   const outreachBody =
     "Hi,%0A%0AWe indexed your MCP server on MCP Rank, an independent trust and ranking dataset for MCP tools.%0A%0AWe are asking maintainers to verify source links, install commands, supported clients, auth scopes, and safety cautions before we mark a listing as maintainer verified.%0A%0AServer/listing:%0ARepository or package URL:%0ABest maintainer contact:%0AAnything MCP Rank should correct:%0A%0AThanks.";
@@ -34,35 +31,7 @@ export default async function SubmitPage({ searchParams }: PageProps) {
         </p>
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
-          <form className="rounded-lg border border-[var(--arena-line)] bg-white p-6">
-            <div className="grid gap-4">
-              <label className="grid gap-2 text-sm font-semibold">
-                Server name
-                <input className="h-11 rounded-md border border-[var(--arena-line)] px-3 font-normal" defaultValue={claim ?? ""} />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Repository or package URL
-                <input className="h-11 rounded-md border border-[var(--arena-line)] px-3 font-normal" placeholder="https://github.com/..." />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Maintainer email
-                <input className="h-11 rounded-md border border-[var(--arena-line)] px-3 font-normal" type="email" />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Evidence notes
-                <textarea className="min-h-32 rounded-md border border-[var(--arena-line)] px-3 py-2 font-normal" placeholder="Install docs, supported clients, auth scopes, notable cautions..." />
-              </label>
-            </div>
-            <a
-              href={`mailto:reviews@mcprank.dev?subject=${encodeURIComponent(subject)}&body=${body}`}
-              className="mt-5 inline-flex rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white"
-            >
-              Email review request
-            </a>
-            <p className="mt-3 text-xs leading-5 text-[var(--arena-muted)]">
-              MVP note: this form prepares a review request email while permanent submission storage is being added.
-            </p>
-          </form>
+          <ClaimSubmissionForm claimSlug={claim ?? ""} />
 
           <aside className="rounded-lg border border-[var(--arena-line)] bg-white p-5">
             <h2 className="font-serif text-2xl font-semibold">What helps a review?</h2>

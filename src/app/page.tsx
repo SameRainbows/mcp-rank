@@ -9,6 +9,7 @@ import { SubmitServerLink } from "@/components/submit-server-link";
 import { getServer, getServers, getWeeklyReport } from "@/lib/data";
 import { confidenceLabel, isTrustedRankable, reviewDepthLabel } from "@/lib/server-derived";
 import { overallScore } from "@/lib/scoring";
+import glamaManifest from "../../public/indexes/glama/manifest.json";
 
 export default async function Home() {
   const [serverList, report] = await Promise.all([
@@ -20,6 +21,10 @@ export default async function Home() {
     .filter(isTrustedRankable)
     .sort((a, b) => overallScore(b.score) - overallScore(a.score))
     .slice(0, 3);
+  const indexedCount = `${glamaManifest.count.toLocaleString()}+`;
+  const sourceReviewedCount = serverList.filter((server) => server.reviewDepth === "source_reviewed").length;
+  const deepReviewedCount = serverList.filter((server) => server.reviewDepth === "deep_review").length;
+  const maintainerVerifiedCount = serverList.filter((server) => server.maintainerVerified).length;
 
   if (!report || !leader) return null;
 
@@ -40,6 +45,20 @@ export default async function Home() {
               Compare reviewed MCP servers by trust score, risk, confidence, and source evidence
               before they touch your tools, repos, databases, workspaces, or customer systems.
             </p>
+            <div className="mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-[var(--arena-muted)]">
+              <span>
+                <span className="font-mono font-semibold text-[var(--arena-ink)]">{indexedCount}</span> indexed
+              </span>
+              <span>
+                <span className="font-mono font-semibold text-[var(--arena-ink)]">{sourceReviewedCount}</span> source reviewed
+              </span>
+              <span>
+                <span className="font-mono font-semibold text-[var(--arena-ink)]">{deepReviewedCount}</span> deep reviewed
+              </span>
+              <span>
+                <span className="font-mono font-semibold text-[var(--arena-ink)]">{maintainerVerifiedCount}</span> maintainer verified
+              </span>
+            </div>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 href="/rankings"

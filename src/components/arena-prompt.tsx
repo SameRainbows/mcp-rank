@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { ArrowRight, CheckCircle2, Code2, Globe2, LoaderCircle, Paperclip, RotateCcw, Scale, Terminal } from "lucide-react";
+import { ArrowRight, CheckCircle2, ListChecks, LoaderCircle, RotateCcw, Scale, ShieldCheck, Terminal } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 type ChatMessage = {
@@ -11,32 +11,34 @@ type ChatMessage = {
   content: string;
 };
 
-const promptTools = [
+const launcherTools = [
   {
-    icon: Paperclip,
-    label: "Leaderboard",
-    prompt: "What are the safest MCP servers for Codex? Include scores and confidence caveats.",
-  },
-  {
-    icon: Terminal,
-    label: "Install risk",
-    prompt: "Which highly ranked MCP servers need the most careful install or auth review?",
-  },
-  {
-    icon: Globe2,
-    label: "Signals",
-    prompt: "Summarize the evidence MCP Rank has for GitHub MCP Server, Context7, and Filesystem.",
-  },
-  {
+    id: "compare",
     icon: Scale,
-    label: "Compare",
-    prompt: "Compare Context7 and Filesystem for a Cursor setup.",
+    label: "Compare servers",
   },
   {
-    icon: Code2,
-    label: "Inspect",
-    prompt: "What should a team check before enabling the Slack MCP server?",
+    id: "ranked",
+    icon: ShieldCheck,
+    label: "Why ranked?",
   },
+  {
+    id: "risk",
+    icon: Terminal,
+    label: "Rollout risk",
+  },
+] as const;
+
+const compareServers = ["GitHub MCP Server", "Context7", "Filesystem", "Playwright MCP"];
+
+const rankedServers = ["GitHub MCP Server", "Context7", "Filesystem", "Brave Search"];
+
+const rolloutCategories = [
+  "database tools",
+  "browser automation",
+  "payments",
+  "workspace/chat",
+  "local files",
 ];
 
 const evidenceSteps = [
@@ -427,12 +429,27 @@ type PromptComposerProps = {
 };
 
 function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit }: PromptComposerProps) {
+  const [activeLauncher, setActiveLauncher] = useState<(typeof launcherTools)[number]["id"] | null>(null);
+  const [selectedServers, setSelectedServers] = useState(compareServers.slice(0, 3));
+
+  function toggleCompareServer(server: string) {
+    setSelectedServers((current) => {
+      if (current.includes(server)) return current.filter((item) => item !== server);
+      return [...current, server].slice(0, 4);
+    });
+  }
+
+  function setComparePrompt() {
+    const servers = selectedServers.length >= 2 ? selectedServers : compareServers.slice(0, 2);
+    onChange(`Compare ${servers.join(", ")} by trust score, risk, confidence, source evidence, and rollout caveats.`);
+  }
+
   return (
     <form onSubmit={onSubmit} className={compact ? "border-t border-[var(--arena-line)] p-3" : "p-3"}>
       {!compact && (
         <div className="mb-1 flex items-center justify-between gap-3 px-2 pt-1 text-xs text-[var(--arena-muted)]">
           <span className="font-semibold text-[var(--arena-ink)]">MCP Evidence Assistant</span>
-          <span className="hidden sm:inline">Scores, confidence, evidence, comparisons</span>
+          <span className="hidden sm:inline">Ask anything about MCP servers and leaderboards.</span>
         </div>
       )}
       <label className="sr-only" htmlFor="arena-prompt">
@@ -454,12 +471,16 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap gap-2">
-          {promptTools.map(({ icon: ToolIcon, label, prompt }) => (
+          {launcherTools.map(({ id, icon: ToolIcon, label }) => (
             <button
               key={label}
               type="button"
-              onClick={() => onChange(prompt)}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--arena-line)] bg-[var(--arena-surface)] px-3 text-sm font-medium text-[var(--arena-ink)] transition hover:border-[#9fd2e6] hover:bg-[#edf8fc]"
+              onClick={() => setActiveLauncher((current) => (current === id ? null : id))}
+              className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition ${
+                activeLauncher === id
+                  ? "border-[#9fd2e6] bg-[#edf8fc] text-[var(--arena-ink)]"
+                  : "border-[var(--arena-line)] bg-[var(--arena-surface)] text-[var(--arena-ink)] hover:border-[#9fd2e6] hover:bg-[#edf8fc]"
+              }`}
             >
               <ToolIcon size={15} aria-hidden="true" />
               <span>{label}</span>
@@ -484,6 +505,90 @@ function PromptComposer({ value, status, canSubmit, compact, onChange, onSubmit 
           </button>
         </div>
       </div>
+      {activeLauncher && (
+        <div className="mt-3 rounded-lg border border-[var(--arena-line)] bg-[var(--arena-surface)] p-3">
+          {activeLauncher === "compare" && (
+            <div className="grid gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--arena-muted)]">
+                <Scale size={14} aria-hidden="true" />
+                Pick two to four servers
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {compareServers.map((server) => {
+                  const active = selectedServers.includes(server);
+                  return (
+                    <button
+                      key={server}
+                      type="button"
+                      onClick={() => toggleCompareServer(server)}
+                      className={`rounded-md border px-3 py-1.5 text-sm ${
+                        active
+                          ? "border-[#9fd2e6] bg-white font-semibold"
+                          : "border-[var(--arena-line)] bg-transparent text-[var(--arena-muted)]"
+                      }`}
+                    >
+                      {server}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={setComparePrompt}
+                className="w-fit rounded-md bg-[var(--arena-ink)] px-3 py-2 text-xs font-semibold text-white"
+              >
+                Build comparison question
+              </button>
+            </div>
+          )}
+
+          {activeLauncher === "ranked" && (
+            <div className="grid gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--arena-muted)]">
+                <ListChecks size={14} aria-hidden="true" />
+                Ask why a reviewed server ranks where it does
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rankedServers.map((server) => (
+                  <button
+                    key={server}
+                    type="button"
+                    onClick={() =>
+                      onChange(`Why is ${server} ranked where it is? Explain the score, source evidence, confidence, and main cautions.`)
+                    }
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-1.5 text-sm font-medium hover:border-[#9fd2e6] hover:bg-[#edf8fc]"
+                  >
+                    {server}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeLauncher === "risk" && (
+            <div className="grid gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[var(--arena-muted)]">
+                <Terminal size={14} aria-hidden="true" />
+                Choose the rollout surface
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rolloutCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      onChange(`What should a team verify before enabling MCP ${category}? Include source evidence, auth or permission risk, and rollout cautions.`)
+                    }
+                    className="rounded-md border border-[var(--arena-line)] bg-white px-3 py-1.5 text-sm font-medium hover:border-[#9fd2e6] hover:bg-[#edf8fc]"
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </form>
   );
 }

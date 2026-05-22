@@ -11,6 +11,8 @@ export const metadata: Metadata = {
 
 export default async function ReportsPage() {
   const reports = await getWeeklyReports();
+  const featuredReport = reports.find((report) => report.slug === "first-50-reviewed-mcp-trust-layer") ?? reports[0];
+  const remainingReports = reports.filter((report) => report.slug !== featuredReport.slug);
 
   return (
     <ArenaShell mode="Reports">
@@ -24,8 +26,33 @@ export default async function ReportsPage() {
         <p className="mt-3 text-sm font-semibold text-[var(--arena-green)]">
           {reports.length} reports published
         </p>
+        <section className="mt-8 rounded-lg border border-[var(--arena-line)] bg-white p-6">
+          <p className="text-sm font-semibold text-[var(--arena-green)]">Featured report</p>
+          <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="font-serif text-3xl font-semibold">{featuredReport.title}</h2>
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--arena-muted)]">
+                MCP Rank&apos;s first trust-layer report covers 50 reviewed or high-risk MCP pages: 20 Deep Reviews,
+                22 Source Reviewed listings, 6 install-tested/operational review pages, 2 high-risk reviewed pages,
+                and 0 Maintainer Verified listings.
+              </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--arena-muted)]">
+                Indexed means discovered from public sources. Source Reviewed means public links and provenance
+                signals were checked. Deep Review means MCP Rank performed stronger manual evidence and risk
+                analysis. Maintainer Verified still requires maintainer confirmation.
+              </p>
+            </div>
+            <Link
+              href={`/reports/${featuredReport.slug}`}
+              className="inline-flex shrink-0 items-center gap-2 rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black"
+            >
+              Read report
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
         <div className="mt-8 grid gap-4">
-          {reports.map((report) => (
+          {remainingReports.map((report) => (
             <Link
               key={report.slug}
               href={`/reports/${report.slug}`}

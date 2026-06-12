@@ -49,6 +49,9 @@ export default function AboutPage() {
             <Link href="/methodology" className="rounded-md bg-[var(--arena-ink)] px-4 py-2 text-sm font-semibold text-white">
               Read methodology
             </Link>
+            <Link href="/trust-roadmap" className="rounded-md border border-[var(--arena-line)] px-4 py-2 text-sm font-semibold">
+              View trust roadmap
+            </Link>
             <Link href="/submit" className="rounded-md border border-[var(--arena-line)] px-4 py-2 text-sm font-semibold">
               Submit a server
             </Link>

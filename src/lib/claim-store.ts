@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { contactMailtoHref } from "@/lib/contact";
 
 export type ClaimSubmissionRole = "maintainer" | "contributor" | "user" | "company_representative";
 export type ClaimSubmissionType = "claim" | "correction" | "broken_source" | "maintainer_verification";
@@ -164,7 +165,7 @@ export function claimSubmissionMailto(input: ReturnType<typeof normalizeClaimSub
     input.message,
   ].join("\n");
 
-  return `mailto:reviews@mcprank.dev?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return contactMailtoHref(subject, body);
 }
 
 export async function createClaimSubmission(input: ReturnType<typeof normalizeClaimSubmissionInput>) {

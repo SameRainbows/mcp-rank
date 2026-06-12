@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Mail } from "lucide-react";
+import { contactMailtoHref } from "@/lib/contact";
 
 type ClaimSubmissionFormProps = {
   claimSlug?: string;
@@ -42,7 +43,7 @@ export function ClaimSubmissionForm({ claimSlug = "" }: ClaimSubmissionFormProps
       "Message:",
       message,
     ].join("\n");
-    return `mailto:reviews@mcprank.dev?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    return contactMailtoHref(subject, body);
   }, [claimType, contactEmail, contactName, evidenceUrls, listingName, message, role, slug]);
 
   async function submitClaim(event: FormEvent<HTMLFormElement>) {
@@ -174,7 +175,7 @@ export function ClaimSubmissionForm({ claimSlug = "" }: ClaimSubmissionFormProps
           className="inline-flex items-center gap-2 rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold transition hover:bg-[var(--arena-blue-soft)]"
         >
           <Mail size={15} aria-hidden="true" />
-          Email fallback
+          Open email fallback
         </a>
       </div>
 

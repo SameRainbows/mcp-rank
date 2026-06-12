@@ -73,6 +73,9 @@ export function ArenaShell({ children }: ArenaShellProps) {
               <Link href="/about" className="hover:text-[var(--arena-ink)]">
                 About
               </Link>
+              <Link href="/trust-roadmap" className="hover:text-[var(--arena-ink)]">
+                Roadmap
+              </Link>
               <Link href="/submit" className="hover:text-[var(--arena-ink)]">
                 Submit
               </Link>
@@ -96,6 +99,9 @@ export function ArenaShell({ children }: ArenaShellProps) {
               </Link>
               <Link href="/methodology" className="hover:text-[var(--arena-ink)]">
                 Methodology
+              </Link>
+              <Link href="/trust-roadmap" className="hover:text-[var(--arena-ink)]">
+                Trust Roadmap
               </Link>
               <Link href="/submit" className="hover:text-[var(--arena-ink)]">
                 Submit MCP Server

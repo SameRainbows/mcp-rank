@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArenaShell } from "@/components/arena-shell";
 import { ClaimSubmissionForm } from "@/components/claim-submission-form";
+import { contactMailtoHref } from "@/lib/contact";
 
 export const metadata: Metadata = {
   title: "Submit MCP Server",
@@ -15,7 +16,7 @@ export default async function SubmitPage({ searchParams }: PageProps) {
   const { claim } = await searchParams;
   const outreachSubject = "MCP Rank listing verification";
   const outreachBody =
-    "Hi,%0A%0AWe indexed your MCP server on MCP Rank, an independent trust and ranking dataset for MCP tools.%0A%0AWe are asking maintainers to verify source links, install commands, supported clients, auth scopes, and safety cautions before we mark a listing as maintainer verified.%0A%0AServer/listing:%0ARepository or package URL:%0ABest maintainer contact:%0AAnything MCP Rank should correct:%0A%0AThanks.";
+    "Hi,\n\nWe indexed your MCP server on MCP Rank, an independent trust and ranking dataset for MCP tools.\n\nWe are asking maintainers to verify source links, install commands, supported clients, auth scopes, and safety cautions before we mark a listing as maintainer verified.\n\nServer/listing:\nRepository or package URL:\nBest maintainer contact:\nAnything MCP Rank should correct:\n\nThanks.";
 
   return (
     <ArenaShell mode="Submit">
@@ -59,10 +60,10 @@ export default async function SubmitPage({ searchParams }: PageProps) {
               <p>Outcome: Reviewed by MCP Rank now; MCP Rank Verified only after maintainer evidence review.</p>
             </div>
             <a
-              href={`mailto:reviews@mcprank.dev?subject=${encodeURIComponent(outreachSubject)}&body=${outreachBody}`}
+              href={contactMailtoHref(outreachSubject, outreachBody)}
               className="inline-flex rounded-md border border-[var(--arena-line)] bg-white px-4 py-2 text-sm font-semibold transition hover:bg-[var(--arena-blue-soft)]"
             >
-              Open outreach email
+              Open email template
             </a>
           </div>
         </section>
